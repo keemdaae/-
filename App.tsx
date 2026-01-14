@@ -119,19 +119,31 @@ const App: React.FC = () => {
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    const loadData = async () => {
+    const loadInitialData = async () => {
       try {
-        // Fallback check for old localStorage data to migrate it if needed
-        const legacyData = localStorage.getItem('daeekeem_data');
+        // 1. Try to load from Local Browser DB (User's edits on THIS device)
         const storedData = await loadFromDB();
+        
+        // 2. Try to load from a global 'data.json' file (Sync across ALL devices)
+        // This file would be created by the user by exporting and naming it data.json
+        let globalData: AppData | null = null;
+        try {
+          const response = await fetch('./data.json');
+          if (response.ok) {
+            globalData = await response.json();
+          }
+        } catch (e) {
+          // data.json not found, which is fine
+        }
 
         if (storedData) {
           setData(storedData);
-        } else if (legacyData) {
-          const parsed = JSON.parse(legacyData);
-          setData(parsed);
-          await saveToDB(parsed); // Migrate to IndexedDB
-          localStorage.removeItem('daeekeem_data');
+        } else if (globalData) {
+          setData(globalData);
+          await saveToDB(globalData); // Cache it locally for next time
+        } else {
+          // Use hardcoded defaults if nothing else is available
+          setData({ projects: INITIAL_PROJECTS, profile: INITIAL_PROFILE });
         }
       } catch (e) {
         console.error("Failed to load data from storage", e);
@@ -139,7 +151,7 @@ const App: React.FC = () => {
         setIsReady(true);
       }
     };
-    loadData();
+    loadInitialData();
   }, []);
 
   const updateData = async (newData: AppData) => {
