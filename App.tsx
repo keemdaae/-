@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { HashRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { Project, Profile, AppData } from './types';
@@ -9,6 +8,47 @@ import About from './pages/About';
 import Contact from './pages/Contact';
 import Admin from './pages/Admin';
 import ProjectDetail from './pages/ProjectDetail';
+
+// Simple IndexedDB Wrapper
+const DB_NAME = 'DaeekeemPortfolioDB';
+const STORE_NAME = 'appData';
+const DB_VERSION = 1;
+
+const initDB = (): Promise<IDBDatabase> => {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME);
+      }
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+};
+
+const saveToDB = async (data: AppData) => {
+  const db = await initDB();
+  return new Promise<void>((resolve, reject) => {
+    const transaction = db.transaction(STORE_NAME, 'readwrite');
+    const store = transaction.objectStore(STORE_NAME);
+    const request = store.put(data, 'mainData');
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+  });
+};
+
+const loadFromDB = async (): Promise<AppData | null> => {
+  const db = await initDB();
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(STORE_NAME, 'readonly');
+    const store = transaction.objectStore(STORE_NAME);
+    const request = store.get('mainData');
+    request.onsuccess = () => resolve(request.result || null);
+    request.onerror = () => reject(request.error);
+  });
+};
 
 const AppContext = createContext<{
   data: AppData;
@@ -33,7 +73,6 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             DAAEKEEM
           </Link>
           <nav className="flex items-center space-x-6 md:space-x-8 text-sm font-medium">
-            {/* Removed redundant Home link */}
             <Link to="/portfolio" className={`hover:opacity-100 transition-opacity ${location.pathname.startsWith('/portfolio') ? 'opacity-100 underline underline-offset-4' : 'opacity-60'}`}>Work</Link>
             <Link to="/about" className={`hover:opacity-100 transition-opacity ${location.pathname === '/about' ? 'opacity-100 underline underline-offset-4' : 'opacity-60'}`}>About</Link>
             <Link to="/contact" className={`hover:opacity-100 transition-opacity ${location.pathname === '/contact' ? 'opacity-100 underline underline-offset-4' : 'opacity-60'}`}>Contact</Link>
@@ -76,36 +115,46 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 };
 
 const App: React.FC = () => {
-  const [data, setData] = useState<AppData>(() => {
-    const saved = localStorage.getItem('daeekeem_data');
-    if (saved) {
+  const [data, setData] = useState<AppData>({ projects: INITIAL_PROJECTS, profile: INITIAL_PROFILE });
+  const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    const loadData = async () => {
       try {
-        const parsed = JSON.parse(saved);
-        if (parsed.projects && parsed.profile) {
-          return parsed;
+        // Fallback check for old localStorage data to migrate it if needed
+        const legacyData = localStorage.getItem('daeekeem_data');
+        const storedData = await loadFromDB();
+
+        if (storedData) {
+          setData(storedData);
+        } else if (legacyData) {
+          const parsed = JSON.parse(legacyData);
+          setData(parsed);
+          await saveToDB(parsed); // Migrate to IndexedDB
+          localStorage.removeItem('daeekeem_data');
         }
       } catch (e) {
-        console.error("Storage parse error, resetting to defaults", e);
+        console.error("Failed to load data from storage", e);
+      } finally {
+        setIsReady(true);
       }
-    }
-    return { projects: INITIAL_PROJECTS, profile: INITIAL_PROFILE };
-  });
+    };
+    loadData();
+  }, []);
 
-  const updateData = (newData: AppData) => {
+  const updateData = async (newData: AppData) => {
     try {
-      const dataString = JSON.stringify(newData);
-      localStorage.setItem('daeekeem_data', dataString);
       setData(newData);
+      await saveToDB(newData);
     } catch (e) {
-      console.error("Storage error:", e);
-      if (e instanceof Error && e.name === 'QuotaExceededError') {
-        alert("Storage Limit Exceeded: The data is too large for the browser's storage. Please use smaller images or URLs.");
-      } else {
-        alert("An unexpected error occurred while saving.");
-      }
-      throw e;
+      console.error("Database storage error:", e);
+      alert("An error occurred while saving to the local database. Your current changes are active but may not persist after a refresh.");
     }
   };
+
+  if (!isReady) {
+    return <div className="min-h-screen bg-black flex items-center justify-center text-[10px] uppercase tracking-[0.5em] opacity-20">Initializing...</div>;
+  }
 
   return (
     <AppContext.Provider value={{ data, updateData }}>

@@ -41,7 +41,8 @@ const Admin: React.FC = () => {
     }
   };
 
-  const processImage = (file: File, maxDim: number = 1600): Promise<string> => {
+  // Improved Image Processing for Higher Resolution/Quality
+  const processImage = (file: File, maxDim: number = 2500, quality: number = 0.9): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.readAsDataURL(file);
@@ -52,6 +53,8 @@ const Admin: React.FC = () => {
           const canvas = document.createElement('canvas');
           let width = img.width;
           let height = img.height;
+          
+          // Maintain aspect ratio while fitting within maxDim
           if (width > height) {
             if (width > maxDim) {
               height *= maxDim / width;
@@ -63,11 +66,20 @@ const Admin: React.FC = () => {
               height = maxDim;
             }
           }
+          
           canvas.width = width;
           canvas.height = height;
           const ctx = canvas.getContext('2d');
-          ctx?.drawImage(img, 0, 0, width, height);
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+          
+          // Use better image smoothing
+          if (ctx) {
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(img, 0, 0, width, height);
+          }
+          
+          // Higher quality output (0.9 is close to lossless perception)
+          const dataUrl = canvas.toDataURL('image/jpeg', quality);
           resolve(dataUrl);
         };
         img.onerror = reject;
@@ -81,7 +93,7 @@ const Admin: React.FC = () => {
     if (file) {
       setIsProcessingImage(true);
       try {
-        const compressed = await processImage(file, 1200);
+        const compressed = await processImage(file, 2000, 0.9);
         setProjectImagePreview(compressed);
         if (projectFormRef.current) {
           const imgUrlInput = projectFormRef.current.elements.namedItem('imageUrl') as HTMLInputElement;
@@ -101,11 +113,12 @@ const Admin: React.FC = () => {
       setIsProcessingImage(true);
       try {
         const processed = await Promise.all(
-          (Array.from(files) as File[]).map(file => processImage(file, 1000))
+          (Array.from(files) as File[]).map(file => processImage(file, 2500, 0.9))
         );
         setGalleryImagePreviews(prev => [...prev, ...processed]);
       } catch (err) {
         console.error("Gallery processing failed", err);
+        alert("Some images were too large or failed to process.");
       } finally {
         setIsProcessingImage(false);
       }
@@ -117,7 +130,7 @@ const Admin: React.FC = () => {
     if (file) {
       setIsProcessingImage(true);
       try {
-        const compressed = await processImage(file, 800);
+        const compressed = await processImage(file, 1200, 0.9);
         setProfileImagePreview(compressed);
       } finally {
         setIsProcessingImage(false);
@@ -130,7 +143,7 @@ const Admin: React.FC = () => {
     if (file) {
       setIsProcessingImage(true);
       try {
-        const compressed = await processImage(file, 1600);
+        const compressed = await processImage(file, 3000, 0.9);
         setHeroImagePreview(compressed);
       } finally {
         setIsProcessingImage(false);
@@ -162,7 +175,7 @@ const Admin: React.FC = () => {
             heroImageUrl: heroImagePreview || (formData.get('heroImageUrl') as string),
           }
         });
-        alert('Site configuration saved to local storage!');
+        alert('Site configuration saved to database!');
       } catch (e) {
         console.error(e);
       } finally {
@@ -188,7 +201,6 @@ const Admin: React.FC = () => {
       setFieldValue('title', project.title);
       setFieldValue('category', project.category);
       setFieldValue('year', project.year);
-      setFieldValue('imageUrl', project.imageUrl);
       setFieldValue('videoUrl', project.videoUrl || '');
       setFieldValue('description', project.description || '');
       setFieldValue('client', project.client || '');
@@ -245,7 +257,7 @@ const Admin: React.FC = () => {
 
     try {
       updateData({ ...data, projects: newProjects });
-      alert(editingProjectId ? 'Project updated!' : 'New project added!');
+      alert(editingProjectId ? 'Project updated in database!' : 'New project added to database!');
       cancelEditing();
     } catch (err) {
       console.error(err);
@@ -278,7 +290,7 @@ const Admin: React.FC = () => {
           const imported = JSON.parse(event.target?.result as string) as AppData;
           if (imported.projects && imported.profile) {
             updateData(imported);
-            alert('Data imported and saved successfully!');
+            alert('Data imported and saved to database successfully!');
             window.location.reload();
           } else {
             alert('Invalid data format.');
@@ -294,8 +306,11 @@ const Admin: React.FC = () => {
 
   const handleResetData = () => {
     if (window.confirm('This will clear ALL your custom changes and reset to defaults. Continue?')) {
-      localStorage.removeItem('daeekeem_data');
-      window.location.reload();
+      const deleteRequest = indexedDB.deleteDatabase('DaeekeemPortfolioDB');
+      deleteRequest.onsuccess = () => {
+        localStorage.removeItem('daeekeem_data');
+        window.location.reload();
+      };
     }
   };
 
@@ -324,7 +339,7 @@ const Admin: React.FC = () => {
       <div className="flex justify-between items-end border-b border-white/10 pb-8">
         <div>
           <h1 className="text-5xl font-extrabold tracking-tighter">Admin Panel</h1>
-          <p className="text-xs opacity-50 mt-2 uppercase tracking-widest">Saved locally. Use Export to backup or Import to restore.</p>
+          <p className="text-xs opacity-50 mt-2 uppercase tracking-widest">Database storage active. Export to backup or Import to restore.</p>
         </div>
         <div className="flex items-center space-x-3">
           <button type="button" onClick={handleExportData} className="text-[10px] uppercase tracking-widest bg-white/10 hover:bg-white/20 px-4 py-2 rounded-full transition-all border border-white/10">Export</button>
@@ -337,7 +352,7 @@ const Admin: React.FC = () => {
 
       {isProcessingImage && (
         <div className="fixed top-8 left-1/2 -translate-x-1/2 z-50 bg-white text-black px-6 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest animate-pulse shadow-2xl">
-          Processing Image...
+          Processing High-Res Image...
         </div>
       )}
 
@@ -413,12 +428,35 @@ const Admin: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="md:col-span-1 space-y-6">
                <div className="space-y-2">
-                 <label className="text-[10px] uppercase tracking-[0.2em] opacity-40">Thumbnail</label>
+                 <label className="text-[10px] uppercase tracking-[0.2em] opacity-40">Main Thumbnail</label>
                  <div className="aspect-square bg-black border border-white/10 flex items-center justify-center overflow-hidden">
                    {projectImagePreview ? <img src={projectImagePreview} className="w-full h-full object-cover" alt="Preview" /> : <Icons.Admin />}
                  </div>
                  <input type="file" ref={projectFileRef} accept="image/*" onChange={handleProjectFileChange} className="hidden" id="project-upload" />
-                 <label htmlFor="project-upload" className="block text-center cursor-pointer border border-white/20 py-3 text-[10px] uppercase tracking-widest hover:bg-white hover:text-black transition-all">Upload File</label>
+                 <label htmlFor="project-upload" className="block text-center cursor-pointer border border-white/20 py-3 text-[10px] uppercase tracking-widest hover:bg-white hover:text-black transition-all">Upload Main Image</label>
+               </div>
+               
+               {/* Gallery Management Section */}
+               <div className="space-y-4 pt-4 border-t border-white/10">
+                 <label className="text-[10px] uppercase tracking-[0.2em] opacity-40">Gallery (Additional Images)</label>
+                 <input type="file" ref={galleryFilesRef} accept="image/*" multiple onChange={handleGalleryFilesChange} className="hidden" id="gallery-upload" />
+                 <label htmlFor="gallery-upload" className="block text-center cursor-pointer border border-white/20 py-3 text-[10px] uppercase tracking-widest hover:bg-white hover:text-black transition-all">Add Gallery Images</label>
+                 
+                 <div className="grid grid-cols-3 gap-2">
+                   {galleryImagePreviews.map((img, i) => (
+                     <div key={i} className="relative aspect-square border border-white/10 group">
+                       <img src={img} className="w-full h-full object-cover" alt={`Gallery ${i}`} />
+                       <button 
+                         type="button" 
+                         onClick={() => removeGalleryImage(i)}
+                         className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                       >
+                         <svg className="w-2 h-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l18 18" /></svg>
+                       </button>
+                     </div>
+                   ))}
+                 </div>
+                 <p className="text-[9px] opacity-30 italic">Note: Gallery images are processed at high resolution for maximum detail.</p>
                </div>
             </div>
             <div className="md:col-span-2 space-y-6">
@@ -429,6 +467,10 @@ const Admin: React.FC = () => {
               </div>
               <input name="videoUrl" placeholder="Video URL (YouTube/Vimeo)" className="w-full bg-black/40 border border-white/10 p-4 outline-none focus:border-white/40 transition-all" />
               <textarea name="description" rows={3} placeholder="Description" className="w-full bg-black/40 border border-white/10 p-4 outline-none resize-none focus:border-white/40 transition-all" />
+              <div className="grid grid-cols-2 gap-4">
+                <input name="client" placeholder="Client" className="w-full bg-black/40 border border-white/10 p-4 outline-none focus:border-white/40 transition-all" />
+                <input name="tools" placeholder="Tools Used" className="w-full bg-black/40 border border-white/10 p-4 outline-none focus:border-white/40 transition-all" />
+              </div>
             </div>
           </div>
           <button type="submit" disabled={isProcessingImage} className="w-full border border-white/40 py-4 uppercase text-xs font-bold tracking-[0.3em] hover:bg-white hover:text-black transition-all">
