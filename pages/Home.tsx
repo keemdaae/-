@@ -29,11 +29,15 @@ const Home: React.FC = () => {
         </div>
         
         <div className="relative z-10 space-y-4 px-6 w-full">
-          <h1 className="text-4xl sm:text-6xl md:text-9xl font-extrabold tracking-[0.1em] md:tracking-[0.2em] animate-in fade-in zoom-in duration-1000 uppercase break-words">DAAEKEEM</h1>
-          <p className="text-sm sm:text-lg md:text-xl tracking-widest uppercase opacity-70 animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-300">Cinematic Visual Editor</p>
+          <h1 className="text-4xl sm:text-6xl md:text-9xl font-extrabold tracking-[0.1em] md:tracking-[0.2em] animate-in fade-in zoom-in duration-1000 uppercase break-words">
+            {data.profile.name}
+          </h1>
+          <p className="text-sm sm:text-lg md:text-xl tracking-widest uppercase opacity-70 animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-300">
+            {data.profile.title}
+          </p>
           <div className="max-w-xl mx-auto">
             <p className="text-[10px] md:text-sm opacity-50 animate-in fade-in duration-1000 delay-500 leading-relaxed">
-              {data.profile.heroDescription || "Creating visual narratives that capture authentic moments and timeless stories through cutting-edge motion and light."}
+              {data.profile.heroDescription}
             </p>
           </div>
         </div>
@@ -72,11 +76,9 @@ const Home: React.FC = () => {
       {/* Projects Section */}
       <section className="space-y-16 px-4 md:px-0">
         <div className="text-center space-y-3">
-          <h2 className="text-3xl md:text-5xl font-light tracking-wider uppercase">{showAll ? "Portfolio" : "Featured Projects"}</h2>
+          <h2 className="text-3xl md:text-5xl font-light tracking-wider uppercase">Featured Projects</h2>
           <div className="w-12 h-[1px] bg-white/20 mx-auto"></div>
-          <p className="text-[10px] opacity-40 tracking-[0.4em] uppercase">
-            {showAll ? `Archive — All ${data.projects.length} Works` : "Selected Works"}
-          </p>
+          <p className="text-[10px] opacity-40 tracking-[0.4em] uppercase">Selected Works</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-24 max-w-6xl mx-auto">
