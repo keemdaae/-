@@ -47,7 +47,7 @@ const About: React.FC = () => {
             <h2 className="text-4xl md:text-6xl font-extrabold tracking-tighter leading-tight">{data.profile.title}</h2>
           </div>
 
-          <div className="space-y-8 text-base md:text-lg font-light leading-relaxed opacity-70">
+          <div className="space-y-8 text-sm md:text-base font-light leading-relaxed opacity-70">
             <h3 className="text-2xl md:text-3xl text-white font-bold tracking-widest uppercase">{data.profile.name}</h3>
             <div className="whitespace-pre-wrap space-y-6">
               {data.profile.bio.split('\n\n').map((paragraph, i) => (
