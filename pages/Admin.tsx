@@ -155,6 +155,7 @@ const Admin: React.FC = () => {
           profile: {
             ...data.profile,
             name: formData.get('name') as string,
+            title: formData.get('title') as string,
             bio: formData.get('bio') as string,
             email: formData.get('email') as string,
             profileImageUrl: profileImagePreview || (formData.get('profileImageUrl') as string),
@@ -180,8 +181,6 @@ const Admin: React.FC = () => {
       const setFieldValue = (name: string, value: string) => {
         const element = form.elements.namedItem(name);
         if (element && 'value' in element) {
-          // Fix: Convert element to unknown first before casting to HTMLInputElement | HTMLTextAreaElement
-          // This resolves the overlap error with RadioNodeList return type from namedItem.
           (element as unknown as HTMLInputElement | HTMLTextAreaElement).value = value || '';
         }
       };
@@ -219,7 +218,6 @@ const Admin: React.FC = () => {
     }
 
     let videoUrl = formData.get('videoUrl') as string;
-    // Auto-extract from iframe if user pastes full embed code
     if (videoUrl.includes('<iframe')) {
       const srcMatch = videoUrl.match(/src=["']([^"']+)["']/);
       if (srcMatch) videoUrl = srcMatch[1];
@@ -329,44 +327,17 @@ const Admin: React.FC = () => {
           <p className="text-xs opacity-50 mt-2 uppercase tracking-widest">Saved locally. Use Export to backup or Import to restore.</p>
         </div>
         <div className="flex items-center space-x-3">
-          <button 
-            type="button" 
-            onClick={handleExportData}
-            className="text-[10px] uppercase tracking-widest bg-white/10 hover:bg-white/20 px-4 py-2 rounded-full transition-all border border-white/10"
-            title="Download your data as JSON"
-          >
-            Export
-          </button>
+          <button type="button" onClick={handleExportData} className="text-[10px] uppercase tracking-widest bg-white/10 hover:bg-white/20 px-4 py-2 rounded-full transition-all border border-white/10">Export</button>
           <input type="file" ref={importFileRef} accept=".json" onChange={handleImportData} className="hidden" />
-          <button 
-            type="button" 
-            onClick={() => importFileRef.current?.click()}
-            className="text-[10px] uppercase tracking-widest bg-white/10 hover:bg-white/20 px-4 py-2 rounded-full transition-all border border-white/10"
-            title="Upload a backup JSON file"
-          >
-            Import
-          </button>
-          <button 
-            type="button" 
-            onClick={handleResetData}
-            className="text-[10px] uppercase tracking-widest bg-red-500/10 hover:bg-red-500/20 text-red-500 px-4 py-2 rounded-full transition-all border border-red-500/10"
-            title="Reset to factory settings"
-          >
-            Reset
-          </button>
-          <button 
-            type="button" 
-            onClick={() => setIsAuthenticated(false)} 
-            className="text-xs opacity-50 hover:opacity-100 uppercase tracking-widest border border-white/20 px-4 py-2 rounded-full transition-all"
-          >
-            Logout
-          </button>
+          <button type="button" onClick={() => importFileRef.current?.click()} className="text-[10px] uppercase tracking-widest bg-white/10 hover:bg-white/20 px-4 py-2 rounded-full transition-all border border-white/10">Import</button>
+          <button type="button" onClick={handleResetData} className="text-[10px] uppercase tracking-widest bg-red-500/10 hover:bg-red-500/20 text-red-500 px-4 py-2 rounded-full transition-all border border-red-500/10">Reset</button>
+          <button type="button" onClick={() => setIsAuthenticated(false)} className="text-xs opacity-50 hover:opacity-100 uppercase tracking-widest border border-white/20 px-4 py-2 rounded-full transition-all">Logout</button>
         </div>
       </div>
 
       {isProcessingImage && (
         <div className="fixed top-8 left-1/2 -translate-x-1/2 z-50 bg-white text-black px-6 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest animate-pulse shadow-2xl">
-          Processing & Compressing Image...
+          Processing Image...
         </div>
       )}
 
@@ -380,6 +351,13 @@ const Admin: React.FC = () => {
               <input name="name" required defaultValue={data.profile.name} className="w-full bg-white/5 border border-white/10 p-4 focus:border-white/40 outline-none transition-all" />
             </div>
             <div className="space-y-1">
+              <label className="text-[10px] uppercase tracking-[0.2em] opacity-40">Professional Title</label>
+              <input name="title" required defaultValue={data.profile.title} placeholder="e.g. Visual Storyteller" className="w-full bg-white/5 border border-white/10 p-4 focus:border-white/40 outline-none transition-all" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-1">
               <label className="text-[10px] uppercase tracking-[0.2em] opacity-40">Email Address</label>
               <input name="email" required defaultValue={data.profile.email} className="w-full bg-white/5 border border-white/10 p-4 focus:border-white/40 outline-none transition-all" />
             </div>
@@ -390,38 +368,20 @@ const Admin: React.FC = () => {
               <label className="text-[10px] uppercase tracking-[0.2em] opacity-40">Profile Image</label>
               <div className="flex flex-col space-y-4">
                 <div className="w-full aspect-[4/3] border border-white/10 overflow-hidden bg-white/5">
-                  {profileImagePreview ? (
-                    <img src={profileImagePreview} className="w-full h-full object-cover" alt="Profile" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-[10px] opacity-20 uppercase tracking-widest">No Image</div>
-                  )}
+                  {profileImagePreview ? <img src={profileImagePreview} className="w-full h-full object-cover" alt="Profile" /> : <div className="w-full h-full flex items-center justify-center text-[10px] opacity-20 uppercase tracking-widest">No Image</div>}
                 </div>
-                <div className="space-y-2">
-                  <input type="file" ref={profileFileRef} accept="image/*" onChange={handleProfileFileChange} className="hidden" id="profile-upload" />
-                  <label htmlFor="profile-upload" className="block text-center cursor-pointer border border-white/20 py-3 text-[10px] uppercase tracking-widest hover:bg-white hover:text-black transition-all">
-                    Upload Local File
-                  </label>
-                  <input name="profileImageUrl" placeholder="Or paste image URL..." defaultValue={data.profile.profileImageUrl} className="w-full bg-white/5 border border-white/10 p-3 text-xs outline-none" onChange={(e) => setProfileImagePreview(e.target.value)} />
-                </div>
+                <input type="file" ref={profileFileRef} accept="image/*" onChange={handleProfileFileChange} className="hidden" id="profile-upload" />
+                <label htmlFor="profile-upload" className="block text-center cursor-pointer border border-white/20 py-3 text-[10px] uppercase tracking-widest hover:bg-white hover:text-black transition-all">Upload Local File</label>
               </div>
             </div>
             <div className="space-y-4">
-              <label className="text-[10px] uppercase tracking-[0.2em] opacity-40">Main Hero Image</label>
+              <label className="text-[10px] uppercase tracking-[0.2em] opacity-40">Hero Image</label>
               <div className="flex flex-col space-y-4">
                 <div className="w-full aspect-[4/3] border border-white/10 overflow-hidden bg-white/5">
-                  {heroImagePreview ? (
-                    <img src={heroImagePreview} className="w-full h-full object-cover" alt="Hero" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-[10px] opacity-20 uppercase tracking-widest">No Image</div>
-                  )}
+                  {heroImagePreview ? <img src={heroImagePreview} className="w-full h-full object-cover" alt="Hero" /> : <div className="w-full h-full flex items-center justify-center text-[10px] opacity-20 uppercase tracking-widest">No Image</div>}
                 </div>
-                <div className="space-y-2">
-                  <input type="file" ref={heroFileRef} accept="image/*" onChange={handleHeroFileChange} className="hidden" id="hero-upload" />
-                  <label htmlFor="hero-upload" className="block text-center cursor-pointer border border-white/20 py-3 text-[10px] uppercase tracking-widest hover:bg-white hover:text-black transition-all">
-                    Upload Local File
-                  </label>
-                  <input name="heroImageUrl" placeholder="Or paste image URL..." defaultValue={data.profile.heroImageUrl} className="w-full bg-white/5 border border-white/10 p-3 text-xs outline-none" onChange={(e) => setHeroImagePreview(e.target.value)} />
-                </div>
+                <input type="file" ref={heroFileRef} accept="image/*" onChange={handleHeroFileChange} className="hidden" id="hero-upload" />
+                <label htmlFor="hero-upload" className="block text-center cursor-pointer border border-white/20 py-3 text-[10px] uppercase tracking-widest hover:bg-white hover:text-black transition-all">Upload Local File</label>
               </div>
             </div>
           </div>
@@ -454,66 +414,19 @@ const Admin: React.FC = () => {
                  <input type="file" ref={projectFileRef} accept="image/*" onChange={handleProjectFileChange} className="hidden" id="project-upload" />
                  <label htmlFor="project-upload" className="block text-center cursor-pointer border border-white/20 py-3 text-[10px] uppercase tracking-widest hover:bg-white hover:text-black transition-all">Upload File</label>
                </div>
-               <div className="space-y-4">
-                 <label className="text-[10px] uppercase tracking-[0.2em] opacity-40">Gallery</label>
-                 <div className="grid grid-cols-3 gap-2">
-                    {galleryImagePreviews.map((img, i) => (
-                      <div key={i} className="relative aspect-square border border-white/10 overflow-hidden">
-                        <img src={img} className="w-full h-full object-cover" alt="Preview" />
-                        <button type="button" onClick={() => removeGalleryImage(i)} className="absolute top-1 right-1 p-1 bg-black/60 rounded-full hover:bg-red-500"><svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button>
-                      </div>
-                    ))}
-                    <input type="file" ref={galleryFilesRef} accept="image/*" multiple onChange={handleGalleryFilesChange} className="hidden" id="gallery-upload" />
-                    <label htmlFor="gallery-upload" className="flex items-center justify-center aspect-square border border-white/20 border-dashed cursor-pointer opacity-40 hover:opacity-100"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg></label>
-                 </div>
-               </div>
             </div>
             <div className="md:col-span-2 space-y-6">
-              <div className="space-y-1">
-                <label className="text-[10px] uppercase tracking-[0.2em] opacity-40">Project Title</label>
-                <input name="title" required placeholder="Enter project title..." className="w-full bg-black/40 border border-white/10 p-4 outline-none focus:border-white/40 transition-all" />
-              </div>
-              
+              <input name="title" required placeholder="Project Title" className="w-full bg-black/40 border border-white/10 p-4 outline-none focus:border-white/40 transition-all" />
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-[10px] uppercase tracking-[0.2em] opacity-40">Category</label>
-                  <input name="category" required placeholder="e.g. Motion Design" className="w-full bg-black/40 border border-white/10 p-4 outline-none focus:border-white/40 transition-all" />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] uppercase tracking-[0.2em] opacity-40">Year</label>
-                  <input name="year" required placeholder="e.g. 2024" className="w-full bg-black/40 border border-white/10 p-4 outline-none focus:border-white/40 transition-all" />
-                </div>
+                <input name="category" required placeholder="Category" className="w-full bg-black/40 border border-white/10 p-4 outline-none focus:border-white/40 transition-all" />
+                <input name="year" required placeholder="Year" className="w-full bg-black/40 border border-white/10 p-4 outline-none focus:border-white/40 transition-all" />
               </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-[10px] uppercase tracking-[0.2em] opacity-40">Client</label>
-                  <input name="client" placeholder="Client Name" className="w-full bg-black/40 border border-white/10 p-4 outline-none focus:border-white/40 transition-all" />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] uppercase tracking-[0.2em] opacity-40">Tools / Tech</label>
-                  <input name="tools" placeholder="Premiere, After Effects, etc." className="w-full bg-black/40 border border-white/10 p-4 outline-none focus:border-white/40 transition-all" />
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[10px] uppercase tracking-[0.2em] opacity-40">Video URL</label>
-                <input name="videoUrl" placeholder="YouTube, Vimeo or Direct MP4 link" className="w-full bg-black/40 border border-white/10 p-4 outline-none focus:border-white/40 transition-all" />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[10px] uppercase tracking-[0.2em] opacity-40">Description</label>
-                <textarea name="description" rows={3} placeholder="Brief project overview..." className="w-full bg-black/40 border border-white/10 p-4 outline-none resize-none focus:border-white/40 transition-all" />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[10px] uppercase tracking-[0.2em] opacity-40">Thumbnail Image URL Override</label>
-                <input name="imageUrl" placeholder="Paste image URL if not uploading..." className="w-full bg-black/40 border border-white/10 p-4 outline-none focus:border-white/40 transition-all" onChange={(e) => setProjectImagePreview(e.target.value)} />
-              </div>
+              <input name="videoUrl" placeholder="Video URL (YouTube/Vimeo)" className="w-full bg-black/40 border border-white/10 p-4 outline-none focus:border-white/40 transition-all" />
+              <textarea name="description" rows={3} placeholder="Description" className="w-full bg-black/40 border border-white/10 p-4 outline-none resize-none focus:border-white/40 transition-all" />
             </div>
           </div>
           <button type="submit" disabled={isProcessingImage} className="w-full border border-white/40 py-4 uppercase text-xs font-bold tracking-[0.3em] hover:bg-white hover:text-black transition-all">
-            {editingProjectId ? 'Update Project' : 'Add Project to Portfolio'}
+            {editingProjectId ? 'Update Project' : 'Add Project'}
           </button>
         </form>
 

@@ -6,12 +6,7 @@ const Contact: React.FC = () => {
   const { data } = useApp();
 
   return (
-    <div className="max-w-4xl mx-auto py-12 space-y-24">
-      <div className="text-center space-y-4">
-        <h1 className="text-7xl font-extrabold tracking-tighter">Get in Touch</h1>
-        <p className="text-xl opacity-50">Let's discuss your next project</p>
-      </div>
-
+    <div className="max-w-4xl mx-auto py-24">
       <div className="max-w-xl mx-auto">
         {/* Contact Info */}
         <div className="space-y-12">

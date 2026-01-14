@@ -23,6 +23,7 @@ export const useApp = () => {
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
+  const { data } = useApp();
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col">
@@ -49,8 +50,24 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         <footer className="mt-20 pt-10 border-t border-white/10 flex justify-between items-center text-xs opacity-50">
           <div>© {new Date().getFullYear()} DAAEKEEM. All rights reserved.</div>
           <div className="flex space-x-4">
-            <a href="#" className="hover:opacity-100 transition-opacity"><Icons.Instagram /></a>
-            <a href="#" className="hover:opacity-100 transition-opacity"><Icons.LinkedIn /></a>
+            <a 
+              href={data.profile.instagram} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="hover:opacity-100 transition-opacity"
+              aria-label="Instagram"
+            >
+              <Icons.Instagram />
+            </a>
+            <a 
+              href={data.profile.linkedin} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="hover:opacity-100 transition-opacity"
+              aria-label="LinkedIn"
+            >
+              <Icons.LinkedIn />
+            </a>
           </div>
         </footer>
       </div>

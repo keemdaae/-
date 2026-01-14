@@ -28,26 +28,14 @@ const About: React.FC = () => {
         <div className="space-y-12">
           <div className="space-y-4">
             <h1 className="text-sm tracking-[0.4em] uppercase opacity-40">About</h1>
-            <h2 className="text-6xl font-extrabold tracking-tighter">Photographer & Visual Storyteller</h2>
+            <h2 className="text-6xl font-extrabold tracking-tighter">{data.profile.title}</h2>
           </div>
 
           <div className="space-y-8 text-lg font-light leading-relaxed opacity-70">
             <h3 className="text-3xl text-white font-bold tracking-widest uppercase">{data.profile.name}</h3>
-            <p>{data.profile.bio}</p>
-            <p>
-              Based in {data.profile.location} with an MFA in Photography from the School of Visual Arts, Sarah brings a unique perspective to every project, combining technical excellence with artistic vision. Her approach to photography is deeply rooted in storytelling, believing that every image should convey emotion and meaning beyond its visual appeal.
-            </p>
-          </div>
-
-          <div className="pt-8 border-t border-white/10 space-y-4">
-             <div className="flex flex-col">
-               <span className="text-[10px] uppercase tracking-[0.2em] opacity-40 mb-1">Email</span>
-               <a href={`mailto:${data.profile.email}`} className="text-xl hover:opacity-70 transition-opacity">{data.profile.email}</a>
-             </div>
-             <div className="flex flex-col">
-               <span className="text-[10px] uppercase tracking-[0.2em] opacity-40 mb-1">Location</span>
-               <span className="text-xl">{data.profile.location}</span>
-             </div>
+            <div className="whitespace-pre-wrap">
+              {data.profile.bio}
+            </div>
           </div>
         </div>
       </div>
