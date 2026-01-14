@@ -67,7 +67,7 @@ const Home: React.FC = () => {
             <Link 
               key={project.id} 
               to={`/portfolio/${project.id}`}
-              className={`group relative overflow-hidden aspect-[4/3] ${idx % 2 !== 0 ? 'md:mt-24' : ''} animate-in fade-in slide-in-from-bottom-4 duration-700`}
+              className={`group relative overflow-hidden aspect-square ${idx % 2 !== 0 ? 'md:mt-24' : ''} animate-in fade-in slide-in-from-bottom-4 duration-700`}
             >
               <img 
                 src={project.imageUrl} 
