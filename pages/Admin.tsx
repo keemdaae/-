@@ -180,7 +180,9 @@ const Admin: React.FC = () => {
       const setFieldValue = (name: string, value: string) => {
         const element = form.elements.namedItem(name);
         if (element && 'value' in element) {
-          (element as HTMLInputElement | HTMLTextAreaElement).value = value || '';
+          // Fix: Convert element to unknown first before casting to HTMLInputElement | HTMLTextAreaElement
+          // This resolves the overlap error with RadioNodeList return type from namedItem.
+          (element as unknown as HTMLInputElement | HTMLTextAreaElement).value = value || '';
         }
       };
 

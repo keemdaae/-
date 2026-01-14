@@ -4,57 +4,57 @@ import { Project, Profile } from './types';
 
 export const INITIAL_PROJECTS: Project[] = [
   {
-    id: '1',
-    title: 'Desert Solitude',
-    category: 'Landscapes',
-    year: '2024',
-    imageUrl: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&q=80&w=1600',
-    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
-    galleryImages: [],
-    description: 'An exploration of the stark beauty and quiet majesty of the American Southwest.',
-    client: 'National Geographic',
-    tools: 'Hasselblad X2D 100C, Adobe Lightroom'
+    "id": "1",
+    "title": "Desert Solitude",
+    "category": "Landscapes",
+    "year": "2024",
+    "imageUrl": "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&q=80&w=1600",
+    "videoUrl": "https://www.youtube.com/watch?v=OB7YO3LyltM",
+    "galleryImages": [],
+    "description": "An exploration of the stark beauty and quiet majesty of the American Southwest.",
+    "client": "National Geographic",
+    "tools": "Hasselblad X2D 100C, Adobe Lightroom"
   },
   {
-    id: '2',
-    title: 'Urban Portraits',
-    category: 'Portraits',
-    year: '2024',
-    imageUrl: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&q=80&w=1600',
-    galleryImages: [],
-    tools: 'Sony A7R V, 85mm f/1.4 GM'
+    "id": "2",
+    "title": "Urban Portraits",
+    "category": "Portraits",
+    "year": "2024",
+    "imageUrl": "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&q=80&w=1600",
+    "galleryImages": [],
+    "tools": "Sony A7R V, 85mm f/1.4 GM"
   },
   {
-    id: '3',
-    title: 'Architectural Visions',
-    category: 'Architecture',
-    year: '2023',
-    imageUrl: 'https://images.unsplash.com/photo-1449034446853-66c86144b0ad?auto=format&fit=crop&q=80&w=1600',
-    galleryImages: [],
-    tools: 'Phase One XF, 35mm LS'
+    "id": "3",
+    "title": "Architectural Visions",
+    "category": "Architecture",
+    "year": "2023",
+    "imageUrl": "https://images.unsplash.com/photo-1449034446853-66c86144b0ad?auto=format&fit=crop&q=80&w=1600",
+    "galleryImages": [],
+    "tools": "Phase One XF, 35mm LS"
   },
   {
-    id: '4',
-    title: 'Fashion Forward',
-    category: 'Editorial',
-    year: '2023',
-    imageUrl: 'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&q=80&w=1600',
-    galleryImages: [],
-    tools: 'Canon EOS R5, 24-70mm f/2.8L'
+    "id": "4",
+    "title": "Fashion Forward",
+    "category": "Editorial",
+    "year": "2023",
+    "imageUrl": "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&q=80&w=1600",
+    "galleryImages": [],
+    "tools": "Canon EOS R5, 24-70mm f/2.8L"
   }
 ];
 
 export const INITIAL_PROFILE: Profile = {
-  name: 'DAAEKEEM',
-  title: 'Cinematic Visual Editor',
-  bio: 'Sarah Mitchell is an award-winning photographer specializing in editorial and commercial work, with recognition including the International Photography Awards Editorial Photographer of the Year 2023. With over a decade of experience, her work has been featured in numerous international publications and exhibitions.',
-  email: 'hello@daeekeem.com',
-  phone: '+1 (555) 123-4567',
-  location: 'New York, NY',
-  profileImageUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=800',
-  heroImageUrl: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&q=80&w=1600',
-  instagram: 'https://instagram.com',
-  linkedin: 'https://linkedin.com'
+  "name": "DAAEKEEM",
+  "title": "Cinematic Visual Editor",
+  "bio": "Da-ae Kim is a visual storyteller and creative director who builds cinematic worlds through character, atmosphere, and narrative. Her work focuses on capturing the unique identity of people and brands, transforming them into striking characters and emotionally resonant visual experiences. Blending story-driven direction with bold visual impact, she creates films and imagery designed not just to be seen, but to be remembered.",
+  "email": "keemdaae@gmail.com",
+  "phone": "+1 (555) 123-4567",
+  "location": "New York, NY",
+  "profileImageUrl": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=800",
+  "heroImageUrl": "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&q=80&w=1600",
+  "instagram": "https://instagram.com",
+  "linkedin": "https://linkedin.com"
 };
 
 export const Icons = {

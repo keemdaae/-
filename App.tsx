@@ -26,15 +26,14 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col">
-      {/* 50px Outer Margin Wrapper */}
       <div className="flex-grow p-6 md:p-[50px] flex flex-col">
-        <header className="flex justify-between items-center mb-12">
+        <header className="flex justify-between items-center mb-12 animate-fade-in">
           <Link to="/" className="text-2xl font-extrabold tracking-widest hover:opacity-70 transition-opacity">
             DAAEKEEM
           </Link>
           <nav className="flex items-center space-x-6 md:space-x-8 text-sm font-medium">
             <Link to="/" className={`hover:opacity-100 transition-opacity ${location.pathname === '/' ? 'opacity-100 underline underline-offset-4' : 'opacity-60'}`}>Home</Link>
-            <Link to="/portfolio" className={`hover:opacity-100 transition-opacity ${location.pathname === '/portfolio' ? 'opacity-100 underline underline-offset-4' : 'opacity-60'}`}>Work</Link>
+            <Link to="/portfolio" className={`hover:opacity-100 transition-opacity ${location.pathname.startsWith('/portfolio') ? 'opacity-100 underline underline-offset-4' : 'opacity-60'}`}>Work</Link>
             <Link to="/about" className={`hover:opacity-100 transition-opacity ${location.pathname === '/about' ? 'opacity-100 underline underline-offset-4' : 'opacity-60'}`}>About</Link>
             <Link to="/contact" className={`hover:opacity-100 transition-opacity ${location.pathname === '/contact' ? 'opacity-100 underline underline-offset-4' : 'opacity-60'}`}>Contact</Link>
             <Link to="/admin" className="opacity-40 hover:opacity-100 transition-opacity">
@@ -43,15 +42,15 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           </nav>
         </header>
 
-        <main className="flex-grow">
+        <main className="flex-grow animate-fade-in" key={location.pathname}>
           {children}
         </main>
 
         <footer className="mt-20 pt-10 border-t border-white/10 flex justify-between items-center text-xs opacity-50">
-          <div>© {new Date().getFullYear()} Daaekeem. All rights reserved.</div>
+          <div>© {new Date().getFullYear()} DAAEKEEM. All rights reserved.</div>
           <div className="flex space-x-4">
-            <a href="#" className="hover:opacity-100"><Icons.Instagram /></a>
-            <a href="#" className="hover:opacity-100"><Icons.LinkedIn /></a>
+            <a href="#" className="hover:opacity-100 transition-opacity"><Icons.Instagram /></a>
+            <a href="#" className="hover:opacity-100 transition-opacity"><Icons.LinkedIn /></a>
           </div>
         </footer>
       </div>
@@ -64,9 +63,13 @@ const App: React.FC = () => {
     const saved = localStorage.getItem('daeekeem_data');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        // Basic validation to ensure we have valid data structure
+        if (parsed.projects && parsed.profile) {
+          return parsed;
+        }
       } catch (e) {
-        console.error("Parse error", e);
+        console.error("Storage parse error, resetting to defaults", e);
       }
     }
     return { projects: INITIAL_PROJECTS, profile: INITIAL_PROFILE };
@@ -80,9 +83,9 @@ const App: React.FC = () => {
     } catch (e) {
       console.error("Storage error:", e);
       if (e instanceof Error && e.name === 'QuotaExceededError') {
-        alert("Storage Limit Exceeded: The image data you're trying to save is too large for the browser's storage (limit is usually 5MB). Please try using image URLs instead of local file uploads, or use smaller images.");
+        alert("Storage Limit Exceeded: The data is too large for the browser's storage. Please use smaller images or URLs.");
       } else {
-        alert("An unexpected error occurred while saving. Please check the console for details.");
+        alert("An unexpected error occurred while saving.");
       }
       throw e;
     }
