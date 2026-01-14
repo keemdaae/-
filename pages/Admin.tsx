@@ -38,11 +38,11 @@ const Admin: React.FC = () => {
     if (password === '870602') {
       setIsAuthenticated(true);
     } else {
-      alert('Incorrect Password');
+      alert('비밀번호가 틀렸습니다.');
     }
   };
 
-  const processImage = (file: File, maxDim: number = 2500, quality: number = 0.9): Promise<string> => {
+  const processImage = (file: File, maxDim: number = 1200, quality: number = 0.8): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.readAsDataURL(file);
@@ -53,6 +53,7 @@ const Admin: React.FC = () => {
           const canvas = document.createElement('canvas');
           let width = img.width;
           let height = img.height;
+          // 안전한 업로드를 위해 이미지 크기 최적화
           if (width > height) {
             if (width > maxDim) {
               height *= maxDim / width;
@@ -86,7 +87,8 @@ const Admin: React.FC = () => {
     if (file) {
       setIsProcessingImage(true);
       try {
-        const compressed = await processImage(file, 2000, 0.9);
+        // 서버 용량 제한을 고려하여 1200px로 조정
+        const compressed = await processImage(file, 1200, 0.8);
         setProjectImagePreview(compressed);
       } finally {
         setIsProcessingImage(false);
@@ -100,7 +102,7 @@ const Admin: React.FC = () => {
       setIsProcessingImage(true);
       try {
         const processed = await Promise.all(
-          (Array.from(files) as File[]).map(file => processImage(file, 2500, 0.9))
+          (Array.from(files) as File[]).map(file => processImage(file, 1200, 0.8))
         );
         setGalleryImagePreviews(prev => [...prev, ...processed]);
       } finally {
@@ -114,7 +116,7 @@ const Admin: React.FC = () => {
     if (file) {
       setIsProcessingImage(true);
       try {
-        const compressed = await processImage(file, 1200, 0.9);
+        const compressed = await processImage(file, 800, 0.8);
         setProfileImagePreview(compressed);
       } finally {
         setIsProcessingImage(false);
@@ -127,7 +129,8 @@ const Admin: React.FC = () => {
     if (file) {
       setIsProcessingImage(true);
       try {
-        const compressed = await processImage(file, 3000, 0.9);
+        // 배경 이미지는 조금 더 크게 허용
+        const compressed = await processImage(file, 1600, 0.8);
         setHeroImagePreview(compressed);
       } finally {
         setIsProcessingImage(false);
@@ -139,28 +142,29 @@ const Admin: React.FC = () => {
     setGalleryImagePreviews(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleUpdateProfile = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleUpdateProfile = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSaving(true);
     const formData = new FormData(e.currentTarget);
-    setTimeout(() => {
-      updateData({
-        ...data,
-        profile: {
-          ...data.profile,
-          name: formData.get('name') as string,
-          title: formData.get('title') as string,
-          heroDescription: formData.get('heroDescription') as string,
-          bio: formData.get('bio') as string,
-          creativeApproach: formData.get('creativeApproach') as string,
-          email: formData.get('email') as string,
-          profileImageUrl: profileImagePreview || data.profile.profileImageUrl,
-          heroImageUrl: heroImagePreview || data.profile.heroImageUrl
-        }
-      });
-      setIsSaving(false);
-      alert('Settings saved to THIS device.');
-    }, 100);
+    
+    // DB 업데이트 대기 (await 사용)
+    await updateData({
+      ...data,
+      profile: {
+        ...data.profile,
+        name: formData.get('name') as string,
+        title: formData.get('title') as string,
+        heroDescription: formData.get('heroDescription') as string,
+        bio: formData.get('bio') as string,
+        creativeApproach: formData.get('creativeApproach') as string,
+        email: formData.get('email') as string,
+        profileImageUrl: profileImagePreview || data.profile.profileImageUrl,
+        heroImageUrl: heroImagePreview || data.profile.heroImageUrl
+      }
+    });
+    
+    setIsSaving(false);
+    alert('프로필이 클라우드 DB에 저장되었습니다! (다른 기기에서도 새로고침 해보세요)');
   };
 
   const startEditing = (project: Project) => {
@@ -192,13 +196,15 @@ const Admin: React.FC = () => {
     if (projectFormRef.current) projectFormRef.current.reset();
   };
 
-  const handleSaveProject = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSaveProject = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (isProcessingImage) return;
     const formData = new FormData(e.currentTarget);
     const finalImageUrl = projectImagePreview;
     if (!finalImageUrl) return alert('Main image required');
     
+    setIsSaving(true); // 저장 중 표시
+
     const projectData: Project = {
       id: editingProjectId || `project-${Date.now()}`,
       title: formData.get('title') as string,
@@ -216,25 +222,28 @@ const Admin: React.FC = () => {
       ? data.projects.map(p => p.id === editingProjectId ? projectData : p)
       : [projectData, ...data.projects];
       
-    updateData({ ...data, projects: newProjects });
-    alert(editingProjectId ? 'Project updated!' : 'Project added!');
+    // DB 업데이트 대기
+    await updateData({ ...data, projects: newProjects });
+    
+    setIsSaving(false);
+    alert(editingProjectId ? '프로젝트가 클라우드에 수정되었습니다!' : '새 프로젝트가 클라우드에 추가되었습니다!');
     cancelEditing();
   };
 
-  const deleteProject = (id: string) => {
-    if (window.confirm('Delete project?')) {
-      updateData({ ...data, projects: data.projects.filter(p => p.id !== id) });
+  const deleteProject = async (id: string) => {
+    if (window.confirm('정말 삭제하시겠습니까? (클라우드에도 반영됩니다)')) {
+      await updateData({ ...data, projects: data.projects.filter(p => p.id !== id) });
     }
   };
 
-  const moveProject = (index: number, direction: 'up' | 'down') => {
+  const moveProject = async (index: number, direction: 'up' | 'down') => {
     const newProjects = [...data.projects];
     const target = direction === 'up' ? index - 1 : index + 1;
     if (target >= 0 && target < newProjects.length) {
       const temp = newProjects[index];
       newProjects[index] = newProjects[target];
       newProjects[target] = temp;
-      updateData({ ...data, projects: newProjects });
+      await updateData({ ...data, projects: newProjects });
     }
   };
 
@@ -260,16 +269,16 @@ const Admin: React.FC = () => {
     try {
       const imported = JSON.parse(syncString) as AppData;
       if (imported.projects && imported.profile) {
-        if (window.confirm('모바일 기기의 데이터를 PC에서 복사한 내용으로 덮어씌울까요?')) {
+        if (window.confirm('이 데이터를 클라우드에 덮어씌울까요?')) {
           updateData(imported);
-          alert('Synchronization Complete!');
+          alert('동기화 및 업로드 완료!');
           window.location.reload();
         }
       } else {
-        alert('Invalid data format.');
+        alert('잘못된 데이터 형식입니다.');
       }
     } catch (e) {
-      alert('Error parsing data. Please check if you copied the entire string.');
+      alert('데이터 파싱 오류');
     }
   };
 
@@ -281,18 +290,17 @@ const Admin: React.FC = () => {
         try {
           const imported = JSON.parse(event.target ? (event.target.result as string) : '') as AppData;
           updateData(imported);
-          alert('Data loaded successfully!');
+          alert('데이터 로드 및 클라우드 업로드 완료!');
           window.location.reload();
-        } catch (err) { alert('Parse error'); }
+        } catch (err) { alert('파일 오류'); }
       };
       reader.readAsText(file);
     }
   };
 
-  const handleResetData = () => {
-    if (window.confirm('Factory Reset? All changes on this device will be deleted.')) {
-      indexedDB.deleteDatabase('DaeekeemPortfolioDB');
-      localStorage.clear();
+  const handleResetData = async () => {
+    if (window.confirm('정말 초기화하시겠습니까? (클라우드 데이터도 삭제될 수 있습니다)')) {
+      await updateData({ ...data, projects: [] }); // 빈 값으로 업데이트
       window.location.reload();
     }
   };
@@ -316,57 +324,19 @@ const Admin: React.FC = () => {
           <h1 className="text-5xl font-extrabold tracking-tighter">Admin Panel</h1>
           <div className="flex items-center space-x-2 mt-2 opacity-50">
              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-             <p className="text-[10px] uppercase tracking-widest">Global Database Connection Ready</p>
+             <p className="text-[10px] uppercase tracking-widest">Cloud Database Active</p>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button onClick={handleExportData} className="text-[9px] uppercase tracking-widest bg-white/10 px-4 py-2 rounded border border-white/10">Download data.json</button>
+          <button onClick={handleExportData} className="text-[9px] uppercase tracking-widest bg-white/10 px-4 py-2 rounded border border-white/10">Backup JSON</button>
           <input type="file" ref={importFileRef} accept=".json" onChange={handleImportData} className="hidden" />
-          <button onClick={() => importFileRef.current ? importFileRef.current.click() : null} className="text-[9px] uppercase tracking-widest bg-white/10 px-4 py-2 rounded border border-white/10">Upload JSON</button>
-          <button onClick={handleResetData} className="text-[9px] uppercase tracking-widest text-red-500 px-4 py-2 rounded border border-red-500/10">Factory Reset</button>
+          <button onClick={() => importFileRef.current ? importFileRef.current.click() : null} className="text-[9px] uppercase tracking-widest bg-white/10 px-4 py-2 rounded border border-white/10">Restore JSON</button>
           <button onClick={() => setIsAuthenticated(false)} className="text-[9px] uppercase tracking-widest opacity-40 px-4 py-2">Logout</button>
         </div>
       </div>
 
-      {/* SYNC TOOLBOX */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <section className="p-6 bg-blue-500/5 border border-blue-500/20 rounded-lg space-y-4">
-          <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-blue-400">Step 1: PC에서 할 일</h2>
-          <p className="text-[10px] opacity-60 leading-relaxed uppercase tracking-widest">
-            편집을 마친 후 아래 버튼을 눌러 전체 데이터를 복사하세요. 이 텍스트를 나에게 보내기(카톡 등) 하세요.
-          </p>
-          <button onClick={handleCopySyncString} className={`w-full py-4 rounded text-[10px] font-bold uppercase tracking-[0.3em] transition-all ${copyFeedback ? 'bg-green-500 text-white' : 'bg-white text-black hover:bg-white/90'}`}>
-            {copyFeedback ? 'Copied!' : 'Copy Data to Clipboard'}
-          </button>
-        </section>
-
-        <section className="p-6 bg-white/[0.03] border border-white/10 rounded-lg space-y-4">
-          <h2 className="text-xs font-bold uppercase tracking-[0.2em]">Step 2: 모바일에서 할 일</h2>
-          <p className="text-[10px] opacity-60 leading-relaxed uppercase tracking-widest">
-            PC에서 전달한 텍스트를 아래에 붙여넣고 동기화 버튼을 누르면 모바일에도 즉시 적용됩니다.
-          </p>
-          <div className="flex flex-col gap-2">
-            <input type="text" value={syncString} onChange={(e) => setSyncString(e.target.value)} placeholder="Paste string here..." className="w-full bg-black border border-white/10 p-3 text-[10px] outline-none" />
-            <button onClick={handleSyncFromString} className="w-full bg-white/10 border border-white/10 py-3 text-[10px] font-bold uppercase tracking-[0.3em] hover:bg-white/20">Sync to Mobile</button>
-          </div>
-        </section>
-      </div>
-
-      <section className="p-6 bg-yellow-500/5 border border-yellow-500/10 rounded-lg space-y-4">
-         <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-yellow-500">Global Permanent Deploy (중요)</h2>
-         <div className="text-[10px] opacity-60 uppercase tracking-widest leading-relaxed space-y-2">
-            <p>위의 수동 동기화는 '내 기기'들 끼리만 유효합니다. 전 세계 모든 방문자에게 내가 수정한 내용을 보여주려면:</p>
-            <ol className="list-decimal list-inside space-y-1 ml-2">
-              <li>우측 상단 <strong>[Download data.json]</strong>을 클릭합니다.</li>
-              <li>다운로드된 파일을 프로젝트 루트(index.html이 있는 곳)에 넣습니다.</li>
-              <li>Github에 Push하거나 Netlify에 <strong>다시 배포(Deploy)</strong>합니다.</li>
-              <li>이제 DB가 없어도 모든 기기에서 이 내용이 기본값으로 고정됩니다.</li>
-            </ol>
-         </div>
-      </section>
-
       {isProcessingImage && (
-        <div className="fixed top-8 left-1/2 -translate-x-1/2 z-50 bg-white text-black px-6 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest animate-pulse shadow-2xl">Processing...</div>
+        <div className="fixed top-8 left-1/2 -translate-x-1/2 z-50 bg-white text-black px-6 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest animate-pulse shadow-2xl">Optimizing Image...</div>
       )}
 
       {/* Profile Config */}
@@ -401,7 +371,9 @@ const Admin: React.FC = () => {
           <textarea name="bio" rows={4} defaultValue={data.profile.bio} placeholder="Bio" className="w-full bg-white/5 border border-white/10 p-4 outline-none resize-none" />
           <textarea name="creativeApproach" rows={6} defaultValue={data.profile.creativeApproach} placeholder="Creative Approach" className="w-full bg-white/5 border border-white/10 p-4 outline-none resize-none" />
           
-          <button type="submit" disabled={isSaving} className="bg-white text-black py-4 px-12 font-bold uppercase text-[10px] tracking-widest hover:bg-white/90">Save Settings</button>
+          <button type="submit" disabled={isSaving} className="bg-white text-black py-4 px-12 font-bold uppercase text-[10px] tracking-widest hover:bg-white/90">
+            {isSaving ? 'Uploading to Cloud...' : 'Save Settings'}
+          </button>
         </form>
       </section>
 
@@ -429,7 +401,9 @@ const Admin: React.FC = () => {
             </div>
           </div>
           <div className="flex gap-2">
-            <button type="submit" className="flex-grow bg-white text-black py-3 font-bold uppercase text-[10px] tracking-widest">Submit Project</button>
+            <button type="submit" disabled={isSaving} className="flex-grow bg-white text-black py-3 font-bold uppercase text-[10px] tracking-widest">
+                {isSaving ? 'Uploading...' : 'Submit Project'}
+            </button>
             {editingProjectId && <button type="button" onClick={cancelEditing} className="px-6 border border-white/20 uppercase text-[10px]">Cancel</button>}
           </div>
         </form>
