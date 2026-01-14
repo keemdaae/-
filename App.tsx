@@ -9,7 +9,6 @@ import Contact from './pages/Contact';
 import Admin from './pages/Admin';
 import ProjectDetail from './pages/ProjectDetail';
 
-// Simple IndexedDB Wrapper
 const DB_NAME = 'DaeekeemPortfolioDB';
 const STORE_NAME = 'appData';
 const DB_VERSION = 1;
@@ -109,13 +108,29 @@ const App: React.FC = () => {
   useEffect(() => {
     const loadInitialData = async () => {
       try {
-        // High Priority: Local Edits
+        // 1. Cloud Database 우선 조회 (Netlify Functions 사용)
+        try {
+          const response = await fetch('/.netlify/functions/get-data');
+          if (response.ok) {
+            const cloudData = await response.json();
+            if (cloudData) {
+              setData(cloudData);
+              await saveToDB(cloudData); // 로컬 캐시 업데이트
+              setIsReady(true);
+              return;
+            }
+          }
+        } catch (e) {
+          console.warn("Cloud DB fetch failed, falling back to local.", e);
+        }
+
+        // 2. Cloud 실패 시 로컬 브라우저 데이터 조회
         const storedData = await loadFromDB();
         
-        // Low Priority: Global default file
+        // 3. 둘 다 없으면 기본 파일 조회
         let globalData: AppData | null = null;
         try {
-          const response = await fetch('./data.json');
+          const response = await fetch(`./data.json?t=${Date.now()}`);
           if (response.ok) {
             globalData = await response.json();
           }
@@ -140,11 +155,25 @@ const App: React.FC = () => {
 
   const updateData = async (newData: AppData) => {
     setData(newData);
+    
+    // 1. 로컬 저장
     await saveToDB(newData);
+    
+    // 2. 클라우드 저장 (백그라운드 동기화)
+    try {
+      await fetch('/.netlify/functions/save-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newData),
+      });
+      console.log("Cloud Database Sync Success");
+    } catch (e) {
+      console.error("Cloud Database Sync Failed", e);
+    }
   };
 
   if (!isReady) {
-    return <div className="min-h-screen bg-black flex items-center justify-center text-[10px] uppercase tracking-[0.5em] opacity-20">Loading Portfolio...</div>;
+    return <div className="min-h-screen bg-black flex items-center justify-center text-[10px] uppercase tracking-[0.5em] opacity-20">DAAEKEEM Loading...</div>;
   }
 
   return (
