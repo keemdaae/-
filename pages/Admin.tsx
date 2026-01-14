@@ -8,6 +8,7 @@ const Admin: React.FC = () => {
   const [password, setPassword] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [syncString, setSyncString] = useState('');
+  const [copyFeedback, setCopyFeedback] = useState(false);
   
   // States for Previews
   const [projectImagePreview, setProjectImagePreview] = useState<string | null>(null);
@@ -27,7 +28,6 @@ const Admin: React.FC = () => {
   const projectFormRef = useRef<HTMLFormElement>(null);
   const importFileRef = useRef<HTMLInputElement>(null);
 
-  // Sync previews when data changes
   useEffect(() => {
     setProfileImagePreview(data.profile.profileImageUrl);
     setHeroImagePreview(data.profile.heroImageUrl);
@@ -88,8 +88,6 @@ const Admin: React.FC = () => {
       try {
         const compressed = await processImage(file, 2000, 0.9);
         setProjectImagePreview(compressed);
-      } catch (err) {
-        console.error("Image processing failed", err);
       } finally {
         setIsProcessingImage(false);
       }
@@ -105,8 +103,6 @@ const Admin: React.FC = () => {
           (Array.from(files) as File[]).map(file => processImage(file, 2500, 0.9))
         );
         setGalleryImagePreviews(prev => [...prev, ...processed]);
-      } catch (err) {
-        console.error("Gallery processing failed", err);
       } finally {
         setIsProcessingImage(false);
       }
@@ -148,27 +144,22 @@ const Admin: React.FC = () => {
     setIsSaving(true);
     const formData = new FormData(e.currentTarget);
     setTimeout(() => {
-      try {
-        updateData({
-          ...data,
-          profile: {
-            ...data.profile,
-            name: formData.get('name') as string,
-            title: formData.get('title') as string,
-            heroDescription: formData.get('heroDescription') as string,
-            bio: formData.get('bio') as string,
-            creativeApproach: formData.get('creativeApproach') as string,
-            email: formData.get('email') as string,
-            profileImageUrl: profileImagePreview || data.profile.profileImageUrl,
-            heroImageUrl: heroImagePreview || data.profile.heroImageUrl
-          }
-        });
-        alert('Site configuration saved!');
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setIsSaving(false);
-      }
+      updateData({
+        ...data,
+        profile: {
+          ...data.profile,
+          name: formData.get('name') as string,
+          title: formData.get('title') as string,
+          heroDescription: formData.get('heroDescription') as string,
+          bio: formData.get('bio') as string,
+          creativeApproach: formData.get('creativeApproach') as string,
+          email: formData.get('email') as string,
+          profileImageUrl: profileImagePreview || data.profile.profileImageUrl,
+          heroImageUrl: heroImagePreview || data.profile.heroImageUrl
+        }
+      });
+      setIsSaving(false);
+      alert('Profile updated on this device.');
     }, 100);
   };
 
@@ -190,10 +181,7 @@ const Admin: React.FC = () => {
       setField('client', project.client || '');
       setField('tools', project.tools || '');
     }
-    const offset = projectFormRef.current?.offsetTop;
-    if (offset) {
-      window.scrollTo({ top: offset - 100, behavior: 'smooth' });
-    }
+    window.scrollTo({ top: (projectFormRef.current?.offsetTop || 0) - 100, behavior: 'smooth' });
   };
 
   const cancelEditing = () => {
@@ -208,10 +196,8 @@ const Admin: React.FC = () => {
     if (isProcessingImage) return;
     const formData = new FormData(e.currentTarget);
     const finalImageUrl = projectImagePreview;
-    if (!finalImageUrl) {
-      alert('Please provide a project image.');
-      return;
-    }
+    if (!finalImageUrl) return alert('Main image required');
+    
     const projectData: Project = {
       id: editingProjectId || `project-${Date.now()}`,
       title: formData.get('title') as string,
@@ -224,16 +210,18 @@ const Admin: React.FC = () => {
       client: formData.get('client') as string,
       tools: formData.get('tools') as string
     };
+    
     const newProjects = editingProjectId 
       ? data.projects.map(p => p.id === editingProjectId ? projectData : p)
       : [projectData, ...data.projects];
+      
     updateData({ ...data, projects: newProjects });
     alert(editingProjectId ? 'Project updated!' : 'Project added!');
     cancelEditing();
   };
 
   const deleteProject = (id: string) => {
-    if (window.confirm('Delete this project?')) {
+    if (window.confirm('Delete project?')) {
       updateData({ ...data, projects: data.projects.filter(p => p.id !== id) });
     }
   };
@@ -254,14 +242,16 @@ const Admin: React.FC = () => {
     const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
     const link = document.createElement('a');
     link.setAttribute('href', dataUri);
-    link.setAttribute('download', `portfolio_backup_${new Date().toISOString().split('T')[0]}.json`);
+    link.setAttribute('download', `portfolio_data.json`);
     link.click();
   };
 
   const handleCopySyncString = () => {
     const dataStr = JSON.stringify(data);
-    navigator.clipboard.writeText(dataStr);
-    alert('Full data string copied to clipboard!');
+    navigator.clipboard.writeText(dataStr).then(() => {
+      setCopyFeedback(true);
+      setTimeout(() => setCopyFeedback(false), 2000);
+    });
   };
 
   const handleSyncFromString = () => {
@@ -269,16 +259,16 @@ const Admin: React.FC = () => {
     try {
       const imported = JSON.parse(syncString) as AppData;
       if (imported.projects && imported.profile) {
-        if (window.confirm('This will overwrite current device data. Proceed?')) {
+        if (window.confirm('모바일의 기존 데이터를 PC에서 복사한 데이터로 덮어씌우시겠습니까?')) {
           updateData(imported);
-          alert('Sync successful! Refreshing...');
+          alert('Sync Complete! The page will reload.');
           window.location.reload();
         }
       } else {
         alert('Invalid format.');
       }
     } catch (e) {
-      alert('Failed to parse text.');
+      alert('Error parsing data. Please copy the text again.');
     }
   };
 
@@ -290,18 +280,16 @@ const Admin: React.FC = () => {
         try {
           const imported = JSON.parse(event.target?.result as string) as AppData;
           updateData(imported);
-          alert('Data imported!');
+          alert('Data loaded! Page will reload.');
           window.location.reload();
-        } catch (err) {
-          alert('Failed to parse file.');
-        }
+        } catch (err) { alert('Parse error'); }
       };
       reader.readAsText(file);
     }
   };
 
   const handleResetData = () => {
-    if (window.confirm('Reset ALL data?')) {
+    if (window.confirm('Factory Reset? All local changes will be lost.')) {
       indexedDB.deleteDatabase('DaeekeemPortfolioDB');
       localStorage.clear();
       window.location.reload();
@@ -313,194 +301,145 @@ const Admin: React.FC = () => {
       <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-8">
         <h1 className="text-3xl font-bold tracking-widest uppercase">Admin Access</h1>
         <form onSubmit={handleLogin} className="w-full max-sm space-y-4">
-          <input 
-            type="password" 
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Enter password..."
-            className="w-full bg-white/5 border border-white/20 p-4 focus:outline-none focus:border-white transition-all"
-          />
-          <button type="submit" className="w-full py-4 bg-white text-black font-bold uppercase tracking-widest hover:bg-white/90 transition-all">
-            Login
-          </button>
+          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password..." className="w-full bg-white/5 border border-white/20 p-4 outline-none" />
+          <button type="submit" className="w-full py-4 bg-white text-black font-bold uppercase tracking-widest">Login</button>
         </form>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-20 py-12">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end border-b border-white/10 pb-8 gap-4">
+    <div className="max-w-4xl mx-auto space-y-16 py-12 px-4 md:px-0">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end border-b border-white/10 pb-8 gap-6">
         <div>
           <h1 className="text-5xl font-extrabold tracking-tighter">Admin Panel</h1>
-          <p className="text-xs opacity-50 mt-2 uppercase tracking-widest italic">Local Storage Mode Active</p>
+          <div className="flex items-center space-x-2 mt-2 opacity-50">
+             <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+             <p className="text-[10px] uppercase tracking-widest">Local-Sync Mode Active</p>
+          </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <button type="button" onClick={handleExportData} className="text-[10px] uppercase tracking-widest bg-white/10 hover:bg-white/20 px-4 py-2 rounded-full border border-white/10">Backup File</button>
+        <div className="flex flex-wrap gap-2">
+          <button onClick={handleExportData} className="text-[9px] uppercase tracking-widest bg-white/10 px-4 py-2 rounded border border-white/10">Download JSON</button>
           <input type="file" ref={importFileRef} accept=".json" onChange={handleImportData} className="hidden" />
-          <button type="button" onClick={() => importFileRef.current?.click()} className="text-[10px] uppercase tracking-widest bg-white/10 hover:bg-white/20 px-4 py-2 rounded-full border border-white/10">Load File</button>
-          <button type="button" onClick={handleResetData} className="text-[10px] uppercase tracking-widest text-red-500 bg-red-500/10 hover:bg-red-500/20 px-4 py-2 rounded-full border border-red-500/10">Reset</button>
-          <button type="button" onClick={() => setIsAuthenticated(false)} className="text-[10px] uppercase tracking-widest opacity-40 hover:opacity-100 border border-white/20 px-4 py-2 rounded-full">Logout</button>
+          <button onClick={() => importFileRef.current?.click()} className="text-[9px] uppercase tracking-widest bg-white/10 px-4 py-2 rounded border border-white/10">Upload JSON</button>
+          <button onClick={handleResetData} className="text-[9px] uppercase tracking-widest text-red-500 px-4 py-2 rounded border border-red-500/10">Factory Reset</button>
+          <button onClick={() => setIsAuthenticated(false)} className="text-[9px] uppercase tracking-widest opacity-40 px-4 py-2">Logout</button>
         </div>
       </div>
 
-      {/* Global Sync Status Explanation */}
-      <section className="p-6 bg-blue-500/5 border border-blue-500/20 space-y-4 rounded-lg">
-        <div className="flex items-center space-x-2">
-          <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-          <h2 className="text-sm font-bold uppercase tracking-widest">Global Sync Guide (PC &harr; Mobile)</h2>
-        </div>
-        <div className="text-[10px] opacity-60 uppercase tracking-widest leading-relaxed space-y-2">
-          <p>Neon DB가 연결되어 있지만, 현재 앱은 보안상의 이유로 데이터를 <strong>브라우저 내부</strong>에만 저장합니다.</p>
-          <p className="text-white">모바일에서도 동일한 내용을 보이게 하려면:</p>
-          <ol className="list-decimal list-inside space-y-1 ml-2">
-            <li>위의 <strong>[Backup File]</strong>을 클릭해 데이터를 다운로드합니다.</li>
-            <li>파일 이름을 <strong>data.json</strong>으로 변경합니다.</li>
-            <li>Netlify 프로젝트 폴더 루트에 넣고 <strong>다시 배포(Deploy)</strong>합니다.</li>
-            <li>이제 모든 기기에서 이 내용이 기본값으로 노출됩니다.</li>
-          </ol>
-        </div>
-      </section>
+      {/* SYNC TOOLBOX */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <section className="p-6 bg-blue-500/5 border border-blue-500/20 rounded-lg space-y-4">
+          <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-blue-400">Step 1: PC에서 할 일</h2>
+          <p className="text-[10px] opacity-60 leading-relaxed uppercase tracking-widest">
+            PC에서 편집을 마친 후 아래 버튼을 눌러 전체 데이터를 텍스트로 복사하세요. 그 다음 카톡 등으로 자신에게 보내세요.
+          </p>
+          <button onClick={handleCopySyncString} className={`w-full py-4 rounded text-[10px] font-bold uppercase tracking-[0.3em] transition-all ${copyFeedback ? 'bg-green-500 text-white' : 'bg-white text-black hover:bg-white/90'}`}>
+            {copyFeedback ? 'Copied Success!' : 'Copy Full Data String'}
+          </button>
+        </section>
 
-      {/* Manual Sync Tool */}
-      <section className="p-6 bg-white/[0.03] border border-white/10 space-y-4 rounded-lg">
-        <h2 className="text-sm font-bold uppercase tracking-widest">Manual Data Sync (Clipboard)</h2>
-        <div className="flex flex-col md:flex-row gap-4">
-          <button onClick={handleCopySyncString} className="flex-1 bg-white text-black text-[10px] font-bold uppercase tracking-widest py-3 rounded hover:bg-white/90">Copy All to Clipboard</button>
-          <div className="flex-[2] flex gap-2">
-            <input type="text" placeholder="Paste sync string here..." value={syncString} onChange={(e) => setSyncString(e.target.value)} className="flex-grow bg-black border border-white/10 px-4 text-[10px] outline-none" />
-            <button onClick={handleSyncFromString} className="bg-white/10 hover:bg-white/20 text-[10px] font-bold uppercase px-4 border border-white/10">Sync</button>
+        <section className="p-6 bg-white/[0.03] border border-white/10 rounded-lg space-y-4">
+          <h2 className="text-xs font-bold uppercase tracking-[0.2em]">Step 2: 모바일에서 할 일</h2>
+          <p className="text-[10px] opacity-60 leading-relaxed uppercase tracking-widest">
+            전달받은 텍스트를 복사해 아래에 붙여넣고 동기화 버튼을 누르세요. 모바일에도 수정한 내용이 즉시 적용됩니다.
+          </p>
+          <div className="flex flex-col gap-2">
+            <input type="text" value={syncString} onChange={(e) => setSyncString(e.target.value)} placeholder="Paste string here..." className="w-full bg-black border border-white/10 p-3 text-[10px] outline-none" />
+            <button onClick={handleSyncFromString} className="w-full bg-white/10 border border-white/10 py-3 text-[10px] font-bold uppercase tracking-[0.3em] hover:bg-white/20">Sync Now</button>
           </div>
-        </div>
+        </section>
+      </div>
+
+      <section className="p-6 bg-yellow-500/5 border border-yellow-500/10 rounded-lg">
+         <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-yellow-500 mb-2">Notice: Global Deploy</h2>
+         <p className="text-[9px] opacity-50 uppercase tracking-widest leading-relaxed">
+            위의 수동 동기화는 나만 볼 때 유용합니다. 전 세계 모든 방문자에게 내가 수정한 데이터를 보여주려면 [Download JSON] 버튼으로 파일을 받은 뒤 이름을 data.json으로 바꿔서 Netlify 폴더에 넣고 다시 배포(Deploy)해야 합니다.
+         </p>
       </section>
 
       {isProcessingImage && (
-        <div className="fixed top-8 left-1/2 -translate-x-1/2 z-50 bg-white text-black px-6 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest animate-pulse shadow-2xl">
-          Processing Image...
-        </div>
+        <div className="fixed top-8 left-1/2 -translate-x-1/2 z-50 bg-white text-black px-6 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest animate-pulse shadow-2xl">Processing...</div>
       )}
 
-      {/* Site Config Form */}
-      <section className="space-y-8">
-        <h2 className="text-2xl font-bold tracking-tight">Site Configuration</h2>
-        <form onSubmit={handleUpdateProfile} className="space-y-12">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="space-y-1">
-              <label className="text-[10px] uppercase tracking-[0.2em] opacity-40">Display Name</label>
-              <input name="name" required defaultValue={data.profile.name} className="w-full bg-white/5 border border-white/10 p-4 outline-none focus:border-white/40 transition-all" />
-            </div>
-            <div className="space-y-1">
-              <label className="text-[10px] uppercase tracking-[0.2em] opacity-40">Professional Title</label>
-              <input name="title" required defaultValue={data.profile.title} className="w-full bg-white/5 border border-white/10 p-4 outline-none focus:border-white/40 transition-all" />
-            </div>
+      {/* FORM SECTIONS */}
+      <section className="space-y-12">
+        <h2 className="text-2xl font-bold tracking-tight border-b border-white/5 pb-4">Profile & Branding</h2>
+        <form onSubmit={handleUpdateProfile} className="space-y-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <input name="name" required defaultValue={data.profile.name} placeholder="Name" className="bg-white/5 border border-white/10 p-4 outline-none" />
+            <input name="title" required defaultValue={data.profile.title} placeholder="Title" className="bg-white/5 border border-white/10 p-4 outline-none" />
           </div>
-          <div className="space-y-1">
-            <label className="text-[10px] uppercase tracking-[0.2em] opacity-40">Hero Description</label>
-            <input name="heroDescription" required defaultValue={data.profile.heroDescription} className="w-full bg-white/5 border border-white/10 p-4 outline-none focus:border-white/40 transition-all" />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="space-y-1">
-              <label className="text-[10px] uppercase tracking-[0.2em] opacity-40">Email</label>
-              <input name="email" required defaultValue={data.profile.email} className="w-full bg-white/5 border border-white/10 p-4 outline-none focus:border-white/40 transition-all" />
-            </div>
-          </div>
+          <input name="heroDescription" defaultValue={data.profile.heroDescription} placeholder="Hero Tagline" className="w-full bg-white/5 border border-white/10 p-4 outline-none" />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
             <div className="space-y-4">
-              <label className="text-[10px] uppercase tracking-[0.2em] opacity-40">Profile Image</label>
-              <div className="aspect-[4/3] border border-white/10 overflow-hidden bg-white/5">
-                {profileImagePreview ? <img src={profileImagePreview} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center opacity-20">No Image</div>}
+              <label className="text-[10px] uppercase tracking-widest opacity-40">Profile Image</label>
+              <div className="aspect-[4/3] bg-white/5 border border-white/10 overflow-hidden">
+                {profileImagePreview && <img src={profileImagePreview} className="w-full h-full object-cover" />}
               </div>
-              <input type="file" ref={profileFileRef} accept="image/*" onChange={handleProfileFileChange} className="hidden" id="profile-upload" />
-              <label htmlFor="profile-upload" className="block text-center cursor-pointer border border-white/20 py-3 text-[10px] uppercase hover:bg-white hover:text-black">Upload Profile</label>
+              <input type="file" accept="image/*" onChange={handleProfileFileChange} className="hidden" id="p-up" />
+              <label htmlFor="p-up" className="block text-center border border-white/20 py-3 text-[10px] uppercase cursor-pointer hover:bg-white hover:text-black">Change</label>
             </div>
             <div className="space-y-4">
-              <label className="text-[10px] uppercase tracking-[0.2em] opacity-40">Hero Image</label>
-              <div className="aspect-[4/3] border border-white/10 overflow-hidden bg-white/5">
-                {heroImagePreview ? <img src={heroImagePreview} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center opacity-20">No Image</div>}
+              <label className="text-[10px] uppercase tracking-widest opacity-40">Hero Background</label>
+              <div className="aspect-[4/3] bg-white/5 border border-white/10 overflow-hidden">
+                {heroImagePreview && <img src={heroImagePreview} className="w-full h-full object-cover" />}
               </div>
-              <input type="file" ref={heroFileRef} accept="image/*" onChange={handleHeroFileChange} className="hidden" id="hero-upload" />
-              <label htmlFor="hero-upload" className="block text-center cursor-pointer border border-white/20 py-3 text-[10px] uppercase hover:bg-white hover:text-black">Upload Hero</label>
+              <input type="file" accept="image/*" onChange={handleHeroFileChange} className="hidden" id="h-up" />
+              <label htmlFor="h-up" className="block text-center border border-white/20 py-3 text-[10px] uppercase cursor-pointer hover:bg-white hover:text-black">Change</label>
             </div>
           </div>
-          <div className="space-y-1">
-            <label className="text-[10px] uppercase tracking-[0.2em] opacity-40">Biography</label>
-            <textarea name="bio" rows={5} defaultValue={data.profile.bio} className="w-full bg-white/5 border border-white/10 p-4 outline-none focus:border-white/40 resize-none" />
-          </div>
-          <div className="space-y-1">
-            <label className="text-[10px] uppercase tracking-[0.2em] opacity-40">Creative Approach</label>
-            <textarea name="creativeApproach" rows={8} defaultValue={data.profile.creativeApproach} className="w-full bg-white/5 border border-white/10 p-4 outline-none focus:border-white/40 resize-none" />
-          </div>
-          <button type="submit" disabled={isSaving || isProcessingImage} className="bg-white text-black py-4 px-12 font-bold uppercase text-xs tracking-widest hover:bg-white/90 disabled:opacity-50">
-            {isSaving ? 'Saving...' : 'Save Site Settings'}
-          </button>
+          <textarea name="bio" rows={4} defaultValue={data.profile.bio} placeholder="Bio" className="w-full bg-white/5 border border-white/10 p-4 outline-none resize-none" />
+          <textarea name="creativeApproach" rows={6} defaultValue={data.profile.creativeApproach} placeholder="Approach" className="w-full bg-white/5 border border-white/10 p-4 outline-none resize-none" />
+          <button type="submit" disabled={isSaving} className="bg-white text-black py-4 px-12 font-bold uppercase text-[10px] tracking-widest hover:bg-white/90">Save Settings</button>
         </form>
       </section>
 
-      {/* Project Management */}
-      <section className="space-y-8 pt-20 border-t border-white/10">
-        <h2 className="text-2xl font-bold tracking-tight">Manage Projects</h2>
-        <form ref={projectFormRef} onSubmit={handleSaveProject} className={`p-8 bg-white/5 border ${editingProjectId ? 'border-white/40' : 'border-white/10'} space-y-8`}>
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold uppercase tracking-widest">{editingProjectId ? 'Edit Project' : 'Add New Project'}</h3>
-            {editingProjectId && <button type="button" onClick={cancelEditing} className="text-[10px] uppercase opacity-50 underline">Cancel</button>}
-          </div>
+      <section className="space-y-8 pt-12 border-t border-white/10">
+        <h2 className="text-2xl font-bold tracking-tight">Project Library</h2>
+        <form ref={projectFormRef} onSubmit={handleSaveProject} className="p-6 bg-white/5 border border-white/10 space-y-6">
+          <h3 className="text-xs font-bold uppercase opacity-50">{editingProjectId ? 'Edit Mode' : 'New Project'}</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="md:col-span-1 space-y-4">
-              <div className="aspect-square bg-black border border-white/10 flex items-center justify-center overflow-hidden">
-                {projectImagePreview ? <img src={projectImagePreview} className="w-full h-full object-cover" /> : <Icons.Admin />}
+            <div className="space-y-4">
+              <div className="aspect-square bg-black border border-white/10 overflow-hidden">
+                {projectImagePreview && <img src={projectImagePreview} className="w-full h-full object-cover" />}
               </div>
-              <input type="file" ref={projectFileRef} accept="image/*" onChange={handleProjectFileChange} className="hidden" id="project-upload" />
-              <label htmlFor="project-upload" className="block text-center cursor-pointer border border-white/20 py-3 text-[10px] uppercase hover:bg-white hover:text-black">Thumbnail</label>
-              
-              <input type="file" ref={galleryFilesRef} accept="image/*" multiple onChange={handleGalleryFilesChange} className="hidden" id="gallery-upload" />
-              <label htmlFor="gallery-upload" className="block text-center cursor-pointer border border-white/20 py-3 text-[10px] uppercase hover:bg-white hover:text-black">Add Gallery</label>
-              <div className="grid grid-cols-3 gap-2">
-                {galleryImagePreviews.map((img, i) => (
-                  <div key={i} className="relative aspect-square border border-white/10 group">
-                    <img src={img} className="w-full h-full object-cover" />
-                    <button type="button" onClick={() => removeGalleryImage(i)} className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"><svg className="w-2 h-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l18 18" /></svg></button>
-                  </div>
-                ))}
-              </div>
+              <input type="file" accept="image/*" onChange={handleProjectFileChange} className="hidden" id="pr-up" />
+              <label htmlFor="pr-up" className="block text-center border border-white/20 py-2 text-[10px] uppercase cursor-pointer">Main Image</label>
             </div>
             <div className="md:col-span-2 space-y-4">
-              <input name="title" required placeholder="Project Title" className="w-full bg-black border border-white/10 p-4 outline-none focus:border-white/40" />
-              <div className="grid grid-cols-2 gap-4">
-                <input name="category" required placeholder="Category" className="w-full bg-black border border-white/10 p-4 outline-none" />
-                <input name="year" required placeholder="Year" className="w-full bg-black border border-white/10 p-4 outline-none" />
+              <input name="title" required placeholder="Title" className="w-full bg-black border border-white/10 p-3" />
+              <div className="grid grid-cols-2 gap-2">
+                <input name="category" placeholder="Category" className="bg-black border border-white/10 p-3" />
+                <input name="year" placeholder="Year" className="bg-black border border-white/10 p-3" />
               </div>
-              <input name="videoUrl" placeholder="Video URL" className="w-full bg-black border border-white/10 p-4 outline-none" />
-              <textarea name="description" rows={3} placeholder="Description" className="w-full bg-black border border-white/10 p-4 outline-none resize-none" />
-              <div className="grid grid-cols-2 gap-4">
-                <input name="client" placeholder="Client" className="w-full bg-black border border-white/10 p-4 outline-none" />
-                <input name="tools" placeholder="Tools" className="w-full bg-black border border-white/10 p-4 outline-none" />
-              </div>
+              <input name="videoUrl" placeholder="Video URL" className="w-full bg-black border border-white/10 p-3" />
+              <textarea name="description" rows={2} placeholder="Brief" className="w-full bg-black border border-white/10 p-3" />
             </div>
           </div>
-          <button type="submit" disabled={isProcessingImage} className="w-full border border-white/40 py-4 uppercase text-xs font-bold tracking-widest hover:bg-white hover:text-black">
-            {editingProjectId ? 'Update Project' : 'Add Project'}
-          </button>
+          <div className="flex gap-2">
+            <button type="submit" className="flex-grow bg-white text-black py-3 font-bold uppercase text-[10px] tracking-widest">Submit</button>
+            {editingProjectId && <button type="button" onClick={cancelEditing} className="px-6 border border-white/20 uppercase text-[10px]">Cancel</button>}
+          </div>
         </form>
 
-        <div className="grid grid-cols-1 gap-1">
+        <div className="space-y-1">
           {data.projects.map((p, idx) => (
-            <div key={p.id} className="group flex items-center justify-between p-4 bg-white/5 border border-transparent hover:border-white/20">
+            <div key={p.id} className="group flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 transition-all border border-transparent hover:border-white/10">
               <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 border border-white/10 overflow-hidden grayscale group-hover:grayscale-0">
-                  <img src={p.imageUrl} className="w-full h-full object-cover" />
-                </div>
+                <img src={p.imageUrl} className="w-10 h-10 object-cover grayscale group-hover:grayscale-0" />
                 <div>
-                  <p className="font-bold text-sm">{p.title}</p>
-                  <p className="text-[9px] uppercase opacity-40">{p.category} — {p.year}</p>
+                  <p className="font-bold text-xs">{p.title}</p>
+                  <p className="text-[9px] uppercase opacity-30">{p.category} — {p.year}</p>
                 </div>
               </div>
               <div className="flex items-center space-x-2">
-                <div className="flex flex-col space-y-1 mr-4">
-                  <button type="button" disabled={idx === 0} onClick={() => moveProject(idx, 'up')} className="opacity-40 hover:opacity-100 disabled:opacity-0"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 15l7-7 7 7" /></svg></button>
-                  <button type="button" disabled={idx === data.projects.length - 1} onClick={() => moveProject(idx, 'down')} className="opacity-40 hover:opacity-100 disabled:opacity-0"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" /></svg></button>
+                <div className="flex flex-col space-y-1">
+                  <button onClick={() => moveProject(idx, 'up')} className="opacity-20 hover:opacity-100"><svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 15l7-7 7 7" /></svg></button>
+                  <button onClick={() => moveProject(idx, 'down')} className="opacity-20 hover:opacity-100"><svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" /></svg></button>
                 </div>
-                <button type="button" onClick={() => startEditing(p)} className="p-2 text-white/20 hover:text-white hover:bg-white/10 rounded-full transition-all"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg></button>
-                <button type="button" onClick={() => deleteProject(p.id)} className="p-2 text-white/20 hover:text-red-500 hover:bg-red-500/10 rounded-full transition-all"><Icons.Trash /></button>
+                <button onClick={() => startEditing(p)} className="p-2 opacity-20 hover:opacity-100"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg></button>
+                <button onClick={() => deleteProject(p.id)} className="p-2 opacity-20 hover:text-red-500 hover:opacity-100"><Icons.Trash /></button>
               </div>
             </div>
           ))}

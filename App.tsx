@@ -40,14 +40,18 @@ const saveToDB = async (data: AppData) => {
 };
 
 const loadFromDB = async (): Promise<AppData | null> => {
-  const db = await initDB();
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(STORE_NAME, 'readonly');
-    const store = transaction.objectStore(STORE_NAME);
-    const request = store.get('mainData');
-    request.onsuccess = () => resolve(request.result || null);
-    request.onerror = () => reject(request.error);
-  });
+  try {
+    const db = await initDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(STORE_NAME, 'readonly');
+      const store = transaction.objectStore(STORE_NAME);
+      const request = store.get('mainData');
+      request.onsuccess = () => resolve(request.result || null);
+      request.onerror = () => reject(request.error);
+    });
+  } catch (e) {
+    return null;
+  }
 };
 
 const AppContext = createContext<{
@@ -89,24 +93,8 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         <footer className="mt-20 pt-10 border-t border-white/10 flex justify-between items-center text-xs opacity-50">
           <div>© {new Date().getFullYear()} DAAEKEEM. All rights reserved.</div>
           <div className="flex space-x-4">
-            <a 
-              href={data.profile.instagram} 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              className="hover:opacity-100 transition-opacity"
-              aria-label="Instagram"
-            >
-              <Icons.Instagram />
-            </a>
-            <a 
-              href={data.profile.linkedin} 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              className="hover:opacity-100 transition-opacity"
-              aria-label="LinkedIn"
-            >
-              <Icons.LinkedIn />
-            </a>
+            <a href={data.profile.instagram} target="_blank" rel="noopener noreferrer" className="hover:opacity-100 transition-opacity" aria-label="Instagram"><Icons.Instagram /></a>
+            <a href={data.profile.linkedin} target="_blank" rel="noopener noreferrer" className="hover:opacity-100 transition-opacity" aria-label="LinkedIn"><Icons.LinkedIn /></a>
           </div>
         </footer>
       </div>
@@ -121,32 +109,28 @@ const App: React.FC = () => {
   useEffect(() => {
     const loadInitialData = async () => {
       try {
-        // 1. Try to load from Local Browser DB (User's edits on THIS device)
+        // High Priority: Local Edits
         const storedData = await loadFromDB();
         
-        // 2. Try to load from a global 'data.json' file (Sync across ALL devices)
-        // This file would be created by the user by exporting and naming it data.json
+        // Low Priority: Global default file
         let globalData: AppData | null = null;
         try {
           const response = await fetch('./data.json');
           if (response.ok) {
             globalData = await response.json();
           }
-        } catch (e) {
-          // data.json not found, which is fine
-        }
+        } catch (e) { /* ignore */ }
 
         if (storedData) {
           setData(storedData);
         } else if (globalData) {
           setData(globalData);
-          await saveToDB(globalData); // Cache it locally for next time
+          await saveToDB(globalData);
         } else {
-          // Use hardcoded defaults if nothing else is available
           setData({ projects: INITIAL_PROJECTS, profile: INITIAL_PROFILE });
         }
       } catch (e) {
-        console.error("Failed to load data from storage", e);
+        console.error("Initialization error", e);
       } finally {
         setIsReady(true);
       }
@@ -155,17 +139,12 @@ const App: React.FC = () => {
   }, []);
 
   const updateData = async (newData: AppData) => {
-    try {
-      setData(newData);
-      await saveToDB(newData);
-    } catch (e) {
-      console.error("Database storage error:", e);
-      alert("An error occurred while saving to the local database. Your current changes are active but may not persist after a refresh.");
-    }
+    setData(newData);
+    await saveToDB(newData);
   };
 
   if (!isReady) {
-    return <div className="min-h-screen bg-black flex items-center justify-center text-[10px] uppercase tracking-[0.5em] opacity-20">Initializing...</div>;
+    return <div className="min-h-screen bg-black flex items-center justify-center text-[10px] uppercase tracking-[0.5em] opacity-20">Loading Portfolio...</div>;
   }
 
   return (
