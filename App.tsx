@@ -33,7 +33,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             DAAEKEEM
           </Link>
           <nav className="flex items-center space-x-6 md:space-x-8 text-sm font-medium">
-            <Link to="/" className={`hover:opacity-100 transition-opacity ${location.pathname === '/' ? 'opacity-100 underline underline-offset-4' : 'opacity-60'}`}>Home</Link>
+            {/* Removed redundant Home link */}
             <Link to="/portfolio" className={`hover:opacity-100 transition-opacity ${location.pathname.startsWith('/portfolio') ? 'opacity-100 underline underline-offset-4' : 'opacity-60'}`}>Work</Link>
             <Link to="/about" className={`hover:opacity-100 transition-opacity ${location.pathname === '/about' ? 'opacity-100 underline underline-offset-4' : 'opacity-60'}`}>About</Link>
             <Link to="/contact" className={`hover:opacity-100 transition-opacity ${location.pathname === '/contact' ? 'opacity-100 underline underline-offset-4' : 'opacity-60'}`}>Contact</Link>
@@ -81,7 +81,6 @@ const App: React.FC = () => {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        // Basic validation to ensure we have valid data structure
         if (parsed.projects && parsed.profile) {
           return parsed;
         }

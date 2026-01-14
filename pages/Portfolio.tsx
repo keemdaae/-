@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useApp } from '../App';
@@ -8,9 +7,9 @@ const Portfolio: React.FC = () => {
 
   return (
     <div className="space-y-20 animate-in fade-in duration-700">
-      <div className="space-y-4 max-w-4xl">
-        <h1 className="text-6xl md:text-8xl font-extrabold tracking-tighter">Selected Work</h1>
-        <p className="text-lg opacity-50 max-w-2xl font-light">
+      <div className="space-y-4 px-4 md:px-0">
+        <h1 className="text-4xl sm:text-6xl md:text-8xl font-extrabold tracking-tighter leading-tight">Selected Work</h1>
+        <p className="text-base md:text-lg opacity-50 font-light">
           A comprehensive collection of motion design, cinematic edits, and visual narratives directed and edited by {data.profile.name}.
         </p>
       </div>

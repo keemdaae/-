@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Project, Profile } from './types';
 
@@ -48,6 +47,7 @@ export const INITIAL_PROFILE: Profile = {
   "name": "DAAEKEEM",
   "title": "Cinematic Visual Editor",
   "bio": "Da-ae Kim is a visual storyteller and creative director who builds cinematic worlds through character, atmosphere, and narrative. Her work focuses on capturing the unique identity of people and brands, transforming them into striking characters and emotionally resonant visual experiences. Blending story-driven direction with bold visual impact, she creates films and imagery designed not just to be seen, but to be remembered.",
+  "creativeApproach": "I enjoy discovering my own thoughts and feelings toward any state, object, or person I encounter. \nMy work begins with noticing the quiet emotional shifts that arise within me \n— no matter how small — and treating them as something worth holding onto and recording.\n\nI feel grateful to live in a time where advanced generative AI allows me to give visual form to the sense of excitement and curiosity I experience. \nIt makes it possible to turn inner sensation into something that can be seen and felt.\n\nMy perspective can be either gentle or dark, hopeful or uncertain. \nI like to express what I feel without filtering it, yet I always wish for it to appear with a sense of beauty.\n\nAbove all, I hope that everything I create becomes something that quietly stays with those who pass by my work.",
   "email": "keemdaae@gmail.com",
   "phone": "+1 (555) 123-4567",
   "location": "New York, NY",

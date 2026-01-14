@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useApp } from '../App';
@@ -60,8 +59,6 @@ const ProjectDetail: React.FC = () => {
     
     const ytId = getYouTubeId(url);
     if (ytId) {
-      // Simplest possible embed URL often bypasses 'Error 153'.
-      // Removing 'origin' and 'enablejsapi' as they are the most common triggers for 153 on custom domains.
       return `https://www.youtube.com/embed/${ytId}?rel=0&modestbranding=1&autohide=1&showinfo=0&controls=1`;
     }
 
@@ -121,13 +118,13 @@ const ProjectDetail: React.FC = () => {
               <div className="w-12 h-[1px] bg-white/10"></div>
               <span className="text-[10px] uppercase tracking-[0.4em] opacity-30">{project.year}</span>
             </div>
-            <h1 className="text-5xl md:text-8xl font-extrabold tracking-tighter leading-none">
+            <h1 className="text-4xl md:text-8xl font-extrabold tracking-tighter leading-none break-words">
               {project.title}
             </h1>
           </div>
 
           <div className="max-w-2xl">
-            <p className="text-lg md:text-xl font-light leading-relaxed opacity-60 italic">
+            <p className="text-base md:text-xl font-light leading-relaxed opacity-60 italic">
               {project.description}
             </p>
           </div>
@@ -171,17 +168,15 @@ const ProjectDetail: React.FC = () => {
                     className="w-full h-full absolute inset-0"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
                     allowFullScreen
-                    // Most permissive referrer policy to avoid domain verification issues
                     referrerPolicy="no-referrer-when-downgrade"
                     frameBorder="0"
                   ></iframe>
                 )}
             </div>
             
-            {/* Fallback Link - More prominent if embed fails */}
             {!isDirect && (ytId || vimeoId) && (
               <div className="flex flex-col items-center space-y-4">
-                <p className="text-[10px] opacity-20 uppercase tracking-widest">Player not loading? Some videos are restricted to direct viewing.</p>
+                <p className="text-[9px] md:text-[10px] opacity-20 uppercase tracking-widest text-center">Player not loading? Some videos are restricted to direct viewing.</p>
                 <a 
                   href={rawVideoUrl} 
                   target="_blank" 
@@ -211,7 +206,7 @@ const ProjectDetail: React.FC = () => {
               <span className="text-[10px] uppercase tracking-[0.5em] font-bold opacity-30">Gallery</span>
               <div className="flex-grow h-[1px] bg-white/10"></div>
             </div>
-            <div className="flex items-center space-x-6 pl-8">
+            <div className="flex items-center space-x-6 pl-4 md:pl-8">
               <span className="text-[10px] font-mono tracking-widest opacity-40">
                 {String(currentSlide + 1).padStart(2, '0')} / {String(gallery.length).padStart(2, '0')}
               </span>

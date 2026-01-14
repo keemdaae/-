@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../App';
 import { Icons } from '../constants';
@@ -157,6 +156,7 @@ const Admin: React.FC = () => {
             name: formData.get('name') as string,
             title: formData.get('title') as string,
             bio: formData.get('bio') as string,
+            creativeApproach: formData.get('creativeApproach') as string,
             email: formData.get('email') as string,
             profileImageUrl: profileImagePreview || (formData.get('profileImageUrl') as string),
             heroImageUrl: heroImagePreview || (formData.get('heroImageUrl') as string),
@@ -387,9 +387,15 @@ const Admin: React.FC = () => {
           </div>
 
           <div className="space-y-1">
-            <label className="text-[10px] uppercase tracking-[0.2em] opacity-40">Biography</label>
+            <label className="text-[10px] uppercase tracking-[0.2em] opacity-40">Biography (About Page)</label>
             <textarea name="bio" rows={5} defaultValue={data.profile.bio} className="w-full bg-white/5 border border-white/10 p-4 outline-none focus:border-white/40 transition-all resize-none font-light leading-relaxed" />
           </div>
+
+          <div className="space-y-1">
+            <label className="text-[10px] uppercase tracking-[0.2em] opacity-40">Creative Approach (Home Page)</label>
+            <textarea name="creativeApproach" rows={8} defaultValue={data.profile.creativeApproach} className="w-full bg-white/5 border border-white/10 p-4 outline-none focus:border-white/40 transition-all resize-none font-light leading-relaxed" />
+          </div>
+
           <button type="submit" disabled={isSaving || isProcessingImage} className={`bg-white text-black py-4 px-12 font-bold uppercase text-xs tracking-[0.2em] hover:bg-white/90 transition-all ${(isSaving || isProcessingImage) ? 'opacity-50' : ''}`}>
             {isSaving ? 'Saving...' : 'Save Site Settings'}
           </button>
