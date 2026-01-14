@@ -168,6 +168,7 @@ const Admin: React.FC = () => {
             ...data.profile,
             name: formData.get('name') as string,
             title: formData.get('title') as string,
+            heroDescription: formData.get('heroDescription') as string,
             bio: formData.get('bio') as string,
             creativeApproach: formData.get('creativeApproach') as string,
             email: formData.get('email') as string,
@@ -329,7 +330,7 @@ const Admin: React.FC = () => {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-8">
         <h1 className="text-3xl font-bold tracking-widest uppercase">Admin Access</h1>
-        <form onSubmit={handleLogin} className="w-full max-w-sm space-y-4">
+        <form onSubmit={handleLogin} className="w-full max-sm space-y-4">
           <input 
             type="password" 
             value={password}
@@ -380,6 +381,11 @@ const Admin: React.FC = () => {
               <label className="text-[10px] uppercase tracking-[0.2em] opacity-40">Professional Title</label>
               <input name="title" required defaultValue={data.profile.title} placeholder="e.g. Visual Storyteller" className="w-full bg-white/5 border border-white/10 p-4 focus:border-white/40 outline-none transition-all" />
             </div>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-[10px] uppercase tracking-[0.2em] opacity-40">Hero Description (Home Page Tagline)</label>
+            <input name="heroDescription" required defaultValue={data.profile.heroDescription} placeholder="Short tagline for the home page hero section" className="w-full bg-white/5 border border-white/10 p-4 focus:border-white/40 outline-none transition-all" />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">

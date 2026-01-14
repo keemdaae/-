@@ -33,7 +33,7 @@ const Home: React.FC = () => {
           <p className="text-sm sm:text-lg md:text-xl tracking-widest uppercase opacity-70 animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-300">Cinematic Visual Editor</p>
           <div className="max-w-xl mx-auto">
             <p className="text-[10px] md:text-sm opacity-50 animate-in fade-in duration-1000 delay-500 leading-relaxed">
-              Creating visual narratives that capture authentic moments and timeless stories through cutting-edge motion and light.
+              {data.profile.heroDescription || "Creating visual narratives that capture authentic moments and timeless stories through cutting-edge motion and light."}
             </p>
           </div>
         </div>

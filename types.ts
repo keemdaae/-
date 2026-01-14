@@ -14,6 +14,7 @@ export interface Project {
 export interface Profile {
   name: string;
   title: string;
+  heroDescription: string;
   bio: string;
   creativeApproach: string;
   email: string;
