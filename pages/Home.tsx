@@ -8,9 +8,7 @@ const Home: React.FC = () => {
   const { data } = useApp();
   const [showAll, setShowAll] = useState(false);
   
-  // Initially show 4 projects, show all if showAll is true
   const projectsToShow = showAll ? data.projects : data.projects.slice(0, 4);
-
   const heroImage = data.profile.heroImageUrl || data.profile.profileImageUrl;
 
   return (
@@ -24,7 +22,7 @@ const Home: React.FC = () => {
             className="w-full h-full object-cover opacity-50 grayscale"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black"></div>
-          <div className="absolute inset-0 bg-black/20"></div> {/* Extra overlay for readability */}
+          <div className="absolute inset-0 bg-black/20"></div>
         </div>
         
         <div className="relative z-10 space-y-4">
@@ -76,10 +74,20 @@ const Home: React.FC = () => {
                 alt={project.title} 
                 className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110 grayscale group-hover:grayscale-0"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-8">
-                <span className="text-[10px] tracking-[0.3em] uppercase opacity-60 mb-2">{project.category}</span>
-                <h3 className="text-2xl font-bold tracking-wider">{project.title}</h3>
-                <p className="text-sm opacity-70">{project.year}</p>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-8">
+                <div className="space-y-2">
+                  <span className="text-[10px] tracking-[0.3em] uppercase opacity-60">{project.category}</span>
+                  <h3 className="text-3xl font-bold tracking-wider">{project.title}</h3>
+                  <div className="flex items-center space-x-3 text-[10px] uppercase tracking-[0.2em] font-medium opacity-50">
+                    <span>{project.year}</span>
+                    {project.client && (
+                      <>
+                        <span className="w-1 h-1 bg-white/30 rounded-full"></span>
+                        <span>{project.client}</span>
+                      </>
+                    )}
+                  </div>
+                </div>
               </div>
             </Link>
           ))}

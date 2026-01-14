@@ -5,9 +5,11 @@ export interface Project {
   category: string;
   year: string;
   imageUrl: string;
+  videoUrl?: string;
+  galleryImages?: string[];
   description?: string;
   client?: string;
-  camera?: string;
+  tools?: string;
 }
 
 export interface Profile {

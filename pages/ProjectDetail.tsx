@@ -1,8 +1,7 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useApp } from '../App';
-import { Icons } from '../constants';
 
 const ProjectDetail: React.FC = () => {
   const { id } = useParams();
@@ -10,6 +9,7 @@ const ProjectDetail: React.FC = () => {
   const { data } = useApp();
   
   const project = data.projects.find(p => p.id === id);
+  const [currentSlide, setCurrentSlide] = useState(0);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -24,93 +24,243 @@ const ProjectDetail: React.FC = () => {
     );
   }
 
+  const isDirectVideo = (url: string) => {
+    return /\.(mp4|webm|ogg|mov)$/i.test(url);
+  };
+
+  const getYouTubeId = (url: string) => {
+    if (!url) return null;
+    
+    // 1. If it's an iframe tag, extract src first
+    if (url.includes('<iframe')) {
+      const srcMatch = url.match(/src=["']([^"']+)["']/);
+      if (srcMatch) url = srcMatch[1];
+    }
+    
+    // 2. Comprehensive Regex for all YouTube URL types (Standard, Shorts, Embed, Mobile)
+    const regExp = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/;
+    const match = url.match(regExp);
+    
+    return (match && match[1]) ? match[1] : null;
+  };
+
+  const getVimeoId = (url: string) => {
+    if (!url) return null;
+    if (url.includes('<iframe')) {
+      const srcMatch = url.match(/src=["']([^"']+)["']/);
+      if (srcMatch) url = srcMatch[1];
+    }
+    const regExp = /(?:vimeo\.com\/|player\.vimeo\.com\/video\/)([0-9]+)/i;
+    const match = url.match(regExp);
+    return (match && match[1]) ? match[1] : null;
+  };
+
+  const getEmbedUrl = (url: string) => {
+    if (!url) return null;
+    
+    const ytId = getYouTubeId(url);
+    if (ytId) {
+      // Simplest possible embed URL often bypasses 'Error 153'.
+      // Removing 'origin' and 'enablejsapi' as they are the most common triggers for 153 on custom domains.
+      return `https://www.youtube.com/embed/${ytId}?rel=0&modestbranding=1&autohide=1&showinfo=0&controls=1`;
+    }
+
+    const vimeoId = getVimeoId(url);
+    if (vimeoId) {
+      return `https://player.vimeo.com/video/${vimeoId}?badge=0&autopause=0`;
+    }
+
+    return url;
+  };
+
+  const rawVideoUrl = project.videoUrl || "";
+  const isDirect = isDirectVideo(rawVideoUrl);
+  const embedUrl = getEmbedUrl(rawVideoUrl);
+  const ytId = getYouTubeId(rawVideoUrl);
+  const vimeoId = getVimeoId(rawVideoUrl);
+  
+  const gallery = project.galleryImages || [];
+  const hasGallery = gallery.length > 0;
+
+  const nextSlide = () => {
+    setCurrentSlide((prev) => (prev + 1) % gallery.length);
+  };
+
+  const prevSlide = () => {
+    setCurrentSlide((prev) => (prev - 1 + gallery.length) % gallery.length);
+  };
+
   return (
-    <div className="max-w-7xl mx-auto space-y-16 animate-in fade-in duration-700">
-      {/* Back Button */}
-      <button 
-        onClick={() => navigate(-1)}
-        className="inline-flex items-center text-[10px] uppercase tracking-[0.3em] opacity-40 hover:opacity-100 transition-opacity"
-      >
-        <svg className="w-4 h-4 mr-2 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
-        Back to Portfolio
-      </button>
+    <div className="max-w-7xl mx-auto space-y-24 animate-in fade-in duration-700 pb-32 px-4 md:px-0">
+      {/* Navigation */}
+      <nav className="flex items-center justify-between pt-8">
+        <button 
+          onClick={() => navigate(-1)}
+          className="inline-flex items-center text-[10px] uppercase tracking-[0.3em] opacity-40 hover:opacity-100 transition-opacity"
+        >
+          <svg className="w-4 h-4 mr-2 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+          Back to Projects
+        </button>
+      </nav>
 
       {/* Hero Image */}
-      <section className="relative w-full aspect-[21/9] overflow-hidden bg-white/5 border border-white/10">
+      <section className="relative w-full flex justify-center bg-white/[0.02] border border-white/5 overflow-hidden">
         <img 
           src={project.imageUrl} 
           alt={project.title} 
-          className="w-full h-full object-cover"
+          className="max-w-full h-auto max-h-[85vh] object-contain shadow-2xl"
         />
       </section>
 
-      {/* Content Grid */}
-      <section className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-24">
-        {/* Title and Intro */}
-        <div className="lg:col-span-8 space-y-12">
+      {/* Header Information */}
+      <section className="grid grid-cols-1 lg:grid-cols-12 gap-12 border-b border-white/10 pb-20">
+        <div className="lg:col-span-8 space-y-8">
           <div className="space-y-4">
             <div className="flex items-center space-x-4">
               <span className="text-[10px] uppercase tracking-[0.4em] opacity-30">{project.category}</span>
               <div className="w-12 h-[1px] bg-white/10"></div>
               <span className="text-[10px] uppercase tracking-[0.4em] opacity-30">{project.year}</span>
             </div>
-            <h1 className="text-5xl md:text-7xl font-extrabold tracking-tighter leading-none">
+            <h1 className="text-5xl md:text-8xl font-extrabold tracking-tighter leading-none">
               {project.title}
             </h1>
           </div>
 
-          <div className="prose prose-invert max-w-none">
-            <p className="text-xl md:text-2xl font-light leading-relaxed opacity-70 italic">
-              {project.description || "A comprehensive study on visual elements and narrative structure through the lens of modern cinematic aesthetics. This project explores the boundaries between static imagery and dynamic storytelling, capturing fleeting moments that define our contemporary experience."}
+          <div className="max-w-2xl">
+            <p className="text-lg md:text-xl font-light leading-relaxed opacity-60 italic">
+              {project.description}
             </p>
           </div>
         </div>
 
-        {/* Technical Specs */}
-        <div className="lg:col-span-4 space-y-12">
-          <div className="p-8 border border-white/10 bg-white/5 space-y-8">
-            <h3 className="text-xs uppercase tracking-[0.4em] font-bold pb-4 border-b border-white/10">Project Details</h3>
-            
-            <div className="space-y-6">
-              <div className="space-y-1">
-                <span className="text-[10px] uppercase tracking-widest opacity-30">Client</span>
-                <p className="text-sm font-medium tracking-wide">{project.client || "Self-Initiated"}</p>
-              </div>
-              
-              <div className="space-y-1">
-                <span className="text-[10px] uppercase tracking-widest opacity-30">Camera & Gear</span>
-                <p className="text-sm font-medium tracking-wide">{project.camera || "Leica M11 / 35mm Summilux"}</p>
-              </div>
-              
-              <div className="space-y-1">
-                <span className="text-[10px] uppercase tracking-widest opacity-30">Role</span>
-                <p className="text-sm font-medium tracking-wide">Cinematography, Art Direction</p>
-              </div>
-
-              <div className="pt-4">
-                <Link to="/contact" className="block text-center py-4 border border-white/20 text-[10px] uppercase tracking-[0.3em] font-bold hover:bg-white hover:text-black transition-all">
-                  Inquire About Project
-                </Link>
-              </div>
+        <div className="lg:col-span-4 lg:border-l lg:border-white/10 lg:pl-12 flex flex-col justify-end space-y-8">
+          <div className="space-y-6">
+            <div className="space-y-1">
+              <span className="text-[10px] uppercase tracking-widest opacity-30">Client</span>
+              <p className="text-sm font-medium tracking-wide">{project.client || "Independent Project"}</p>
+            </div>
+            <div className="space-y-1">
+              <span className="text-[10px] uppercase tracking-widest opacity-30">Tools / Tech</span>
+              <p className="text-sm font-medium tracking-wide">{project.tools || "Directorial Debut"}</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Gallery Placeholder - In a real app we might have multiple images per project */}
-      <section className="pt-24 space-y-24">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="aspect-[4/5] bg-white/5 border border-white/10 overflow-hidden grayscale hover:grayscale-0 transition-all duration-700">
-            <img src={project.imageUrl} alt="Project context" className="w-full h-full object-cover" />
+      {/* Cinematic Video Player */}
+      {rawVideoUrl && (
+        <section className="space-y-8">
+          <div className="flex items-center space-x-4">
+            <span className="text-[10px] uppercase tracking-[0.5em] font-bold opacity-30">Motion & Film</span>
+            <div className="flex-grow h-[1px] bg-white/10"></div>
           </div>
-          <div className="flex flex-col justify-center space-y-8 p-12">
-            <h3 className="text-2xl font-light tracking-widest uppercase">The Process</h3>
-            <p className="text-sm opacity-50 leading-relaxed font-light">
-              Every shot is meticulously planned to ensure that the visual narrative remains consistent with the project's overall emotional tone. From site scouting to post-production, the focus remains on authentic expression and technical precision.
-            </p>
-            <div className="w-16 h-[1px] bg-white/20"></div>
+          
+          <div className="space-y-6">
+            <div className="relative w-full aspect-video bg-black shadow-2xl overflow-hidden border border-white/5 group">
+                {isDirect ? (
+                  <video 
+                    src={rawVideoUrl} 
+                    controls 
+                    className="w-full h-full object-contain"
+                    poster={project.imageUrl}
+                  />
+                ) : (
+                  <iframe
+                    src={embedUrl || ""}
+                    title={`${project.title} Video Player`}
+                    className="w-full h-full absolute inset-0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+                    allowFullScreen
+                    // Most permissive referrer policy to avoid domain verification issues
+                    referrerPolicy="no-referrer-when-downgrade"
+                    frameBorder="0"
+                  ></iframe>
+                )}
+            </div>
+            
+            {/* Fallback Link - More prominent if embed fails */}
+            {!isDirect && (ytId || vimeoId) && (
+              <div className="flex flex-col items-center space-y-4">
+                <p className="text-[10px] opacity-20 uppercase tracking-widest">Player not loading? Some videos are restricted to direct viewing.</p>
+                <a 
+                  href={rawVideoUrl} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center space-x-2 text-[10px] uppercase tracking-[0.3em] opacity-40 hover:opacity-100 transition-all border border-white/10 px-8 py-4 rounded-full hover:bg-white hover:text-black"
+                >
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                    {ytId ? (
+                      <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                    ) : (
+                      <path d="M22.396 7.158c-.029 1.463-1.076 3.475-3.141 6.035-2.14 2.67-3.951 4.003-5.432 4.003-1.21 0-2.241-1.115-3.091-3.344l-1.144-4.195c-.534-1.996-1.117-2.993-1.748-2.993-.117 0-.525.242-1.226.727l-.707-.88c.78-.683 1.554-1.365 2.321-2.047 1.05-.918 1.838-1.402 2.365-1.45 1.238-.112 2.003.733 2.298 2.536.31 1.902.528 3.076.657 3.522.28 1.25.597 1.875.952 1.875.27 0 .703-.434 1.299-1.303.596-.869.91-1.523.944-1.963.073-.859-.224-1.289-.893-1.289-.313 0-.642.072-.988.216 1.272-4.162 3.702-6.142 7.292-5.941 2.646.148 3.9 1.764 3.763 4.849z"/>
+                    )}
+                  </svg>
+                  <span>Open in {ytId ? 'YouTube' : 'Vimeo'} App</span>
+                </a>
+              </div>
+            )}
           </div>
-        </div>
+        </section>
+      )}
+
+      {/* Slider Gallery */}
+      {hasGallery && (
+        <section className="space-y-12">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4 flex-grow">
+              <span className="text-[10px] uppercase tracking-[0.5em] font-bold opacity-30">Gallery</span>
+              <div className="flex-grow h-[1px] bg-white/10"></div>
+            </div>
+            <div className="flex items-center space-x-6 pl-8">
+              <span className="text-[10px] font-mono tracking-widest opacity-40">
+                {String(currentSlide + 1).padStart(2, '0')} / {String(gallery.length).padStart(2, '0')}
+              </span>
+              <div className="flex space-x-2">
+                <button 
+                  onClick={prevSlide}
+                  className="p-2 border border-white/10 hover:bg-white hover:text-black transition-all"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                </button>
+                <button 
+                  onClick={nextSlide}
+                  className="p-2 border border-white/10 hover:bg-white hover:text-black transition-all"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <div className="relative w-full min-h-[40vh] md:min-h-[70vh] flex items-center justify-center bg-white/[0.01] border border-white/5 overflow-hidden">
+            {gallery.map((img, i) => (
+              <div 
+                key={i} 
+                className={`absolute inset-0 flex items-center justify-center transition-all duration-700 ease-in-out px-4 py-8 ${
+                  i === currentSlide ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'
+                }`}
+              >
+                <div className="relative max-w-full max-h-full">
+                  <img 
+                    src={img} 
+                    alt={`${project.title} Frame ${i + 1}`} 
+                    className="max-w-full max-h-[65vh] md:max-h-[80vh] h-auto object-contain shadow-2xl" 
+                  />
+                  <div className="mt-4 text-center opacity-30">
+                    <span className="text-[10px] uppercase tracking-[0.3em] font-mono">Frame {String(i + 1).padStart(2, '0')}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Footer Navigation */}
+      <section className="pt-32 flex justify-center border-t border-white/10">
+        <Link to="/" className="text-[10px] uppercase tracking-[0.5em] opacity-40 hover:opacity-100 transition-all hover:tracking-[0.6em]">
+          Return to Index
+        </Link>
       </section>
     </div>
   );

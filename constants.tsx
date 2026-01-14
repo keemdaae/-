@@ -9,30 +9,38 @@ export const INITIAL_PROJECTS: Project[] = [
     category: 'Landscapes',
     year: '2024',
     imageUrl: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&q=80&w=1600',
+    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+    galleryImages: [],
     description: 'An exploration of the stark beauty and quiet majesty of the American Southwest.',
     client: 'National Geographic',
-    camera: 'Hasselblad X2D 100C'
+    tools: 'Hasselblad X2D 100C, Adobe Lightroom'
   },
   {
     id: '2',
     title: 'Urban Portraits',
     category: 'Portraits',
     year: '2024',
-    imageUrl: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&q=80&w=1600'
+    imageUrl: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&q=80&w=1600',
+    galleryImages: [],
+    tools: 'Sony A7R V, 85mm f/1.4 GM'
   },
   {
     id: '3',
     title: 'Architectural Visions',
     category: 'Architecture',
     year: '2023',
-    imageUrl: 'https://images.unsplash.com/photo-1449034446853-66c86144b0ad?auto=format&fit=crop&q=80&w=1600'
+    imageUrl: 'https://images.unsplash.com/photo-1449034446853-66c86144b0ad?auto=format&fit=crop&q=80&w=1600',
+    galleryImages: [],
+    tools: 'Phase One XF, 35mm LS'
   },
   {
     id: '4',
     title: 'Fashion Forward',
     category: 'Editorial',
     year: '2023',
-    imageUrl: 'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&q=80&w=1600'
+    imageUrl: 'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&q=80&w=1600',
+    galleryImages: [],
+    tools: 'Canon EOS R5, 24-70mm f/2.8L'
   }
 ];
 

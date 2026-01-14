@@ -27,13 +27,14 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <div className="min-h-screen bg-black text-white flex flex-col">
       {/* 50px Outer Margin Wrapper */}
-      <div className="flex-grow p-[50px] flex flex-col">
+      <div className="flex-grow p-6 md:p-[50px] flex flex-col">
         <header className="flex justify-between items-center mb-12">
           <Link to="/" className="text-2xl font-extrabold tracking-widest hover:opacity-70 transition-opacity">
             DAAEKEEM
           </Link>
-          <nav className="flex items-center space-x-8 text-sm font-medium">
+          <nav className="flex items-center space-x-6 md:space-x-8 text-sm font-medium">
             <Link to="/" className={`hover:opacity-100 transition-opacity ${location.pathname === '/' ? 'opacity-100 underline underline-offset-4' : 'opacity-60'}`}>Home</Link>
+            <Link to="/portfolio" className={`hover:opacity-100 transition-opacity ${location.pathname === '/portfolio' ? 'opacity-100 underline underline-offset-4' : 'opacity-60'}`}>Work</Link>
             <Link to="/about" className={`hover:opacity-100 transition-opacity ${location.pathname === '/about' ? 'opacity-100 underline underline-offset-4' : 'opacity-60'}`}>About</Link>
             <Link to="/contact" className={`hover:opacity-100 transition-opacity ${location.pathname === '/contact' ? 'opacity-100 underline underline-offset-4' : 'opacity-60'}`}>Contact</Link>
             <Link to="/admin" className="opacity-40 hover:opacity-100 transition-opacity">
@@ -61,7 +62,13 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 const App: React.FC = () => {
   const [data, setData] = useState<AppData>(() => {
     const saved = localStorage.getItem('daeekeem_data');
-    if (saved) return JSON.parse(saved);
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error("Parse error", e);
+      }
+    }
     return { projects: INITIAL_PROJECTS, profile: INITIAL_PROFILE };
   });
 
@@ -72,7 +79,12 @@ const App: React.FC = () => {
       setData(newData);
     } catch (e) {
       console.error("Storage error:", e);
-      alert("Storage failed: The file might be too large for the browser's memory. Please try using a smaller video file or a direct URL link instead.");
+      if (e instanceof Error && e.name === 'QuotaExceededError') {
+        alert("Storage Limit Exceeded: The image data you're trying to save is too large for the browser's storage (limit is usually 5MB). Please try using image URLs instead of local file uploads, or use smaller images.");
+      } else {
+        alert("An unexpected error occurred while saving. Please check the console for details.");
+      }
+      throw e;
     }
   };
 
@@ -82,6 +94,7 @@ const App: React.FC = () => {
         <Layout>
           <Routes>
             <Route path="/" element={<Home />} />
+            <Route path="/portfolio" element={<Portfolio />} />
             <Route path="/portfolio/:id" element={<ProjectDetail />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
