@@ -271,6 +271,17 @@ const Admin: React.FC = () => {
     }
   };
 
+  // Logic for reordering projects
+  const moveProject = (index: number, direction: 'up' | 'down') => {
+    const newProjects = [...data.projects];
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+
+    if (targetIndex >= 0 && targetIndex < newProjects.length) {
+      [newProjects[index], newProjects[targetIndex]] = [newProjects[targetIndex], newProjects[index]];
+      updateData({ ...data, projects: newProjects });
+    }
+  };
+
   const handleExportData = () => {
     const dataStr = JSON.stringify(data, null, 2);
     const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
@@ -479,7 +490,7 @@ const Admin: React.FC = () => {
         </form>
 
         <div className="grid grid-cols-1 gap-1">
-          {data.projects.map(p => (
+          {data.projects.map((p, idx) => (
             <div key={p.id} className="group flex items-center justify-between p-4 bg-white/5 border border-transparent hover:border-white/20 transition-all">
               <div className="flex items-center space-x-6">
                 <div className="w-16 h-16 border border-white/10 overflow-hidden grayscale group-hover:grayscale-0">
@@ -490,13 +501,37 @@ const Admin: React.FC = () => {
                   <p className="text-[10px] uppercase opacity-40 mt-1">{p.category} — {p.year}</p>
                 </div>
               </div>
-              <div className="flex space-x-2">
-                <button type="button" onClick={() => startEditing(p)} className="p-3 text-white/20 hover:text-white hover:bg-white/10 rounded-full"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg></button>
-                <button type="button" onClick={() => deleteProject(p.id)} className="p-3 text-white/20 hover:text-red-500 hover:bg-red-500/10 rounded-full"><Icons.Trash /></button>
+              <div className="flex items-center space-x-2">
+                <div className="flex flex-col space-y-1 mr-4">
+                  <button 
+                    type="button" 
+                    disabled={idx === 0}
+                    onClick={() => moveProject(idx, 'up')}
+                    className={`p-1.5 rounded hover:bg-white/10 transition-all ${idx === 0 ? 'opacity-10 cursor-not-allowed' : 'opacity-40 hover:opacity-100'}`}
+                    title="Move Up"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" /></svg>
+                  </button>
+                  <button 
+                    type="button" 
+                    disabled={idx === data.projects.length - 1}
+                    onClick={() => moveProject(idx, 'down')}
+                    className={`p-1.5 rounded hover:bg-white/10 transition-all ${idx === data.projects.length - 1 ? 'opacity-10 cursor-not-allowed' : 'opacity-40 hover:opacity-100'}`}
+                    title="Move Down"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                  </button>
+                </div>
+                
+                <button type="button" onClick={() => startEditing(p)} className="p-3 text-white/20 hover:text-white hover:bg-white/10 rounded-full" title="Edit"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg></button>
+                <button type="button" onClick={() => deleteProject(p.id)} className="p-3 text-white/20 hover:text-red-500 hover:bg-red-500/10 rounded-full" title="Delete"><Icons.Trash /></button>
               </div>
             </div>
           ))}
         </div>
+        {data.projects.length > 0 && (
+          <p className="text-[9px] opacity-30 text-center uppercase tracking-widest mt-4 italic">Use arrow buttons to adjust project order on the home page.</p>
+        )}
       </section>
     </div>
   );
