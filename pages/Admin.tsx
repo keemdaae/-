@@ -53,7 +53,6 @@ const Admin: React.FC = () => {
           const canvas = document.createElement('canvas');
           let width = img.width;
           let height = img.height;
-          // 안전한 업로드를 위해 이미지 크기 최적화
           if (width > height) {
             if (width > maxDim) {
               height *= maxDim / width;
@@ -87,8 +86,7 @@ const Admin: React.FC = () => {
     if (file) {
       setIsProcessingImage(true);
       try {
-        // 서버 용량 제한을 고려하여 1200px로 조정
-        const compressed = await processImage(file, 1200, 0.8);
+        const compressed = await processImage(file, 1600, 0.85);
         setProjectImagePreview(compressed);
       } finally {
         setIsProcessingImage(false);
@@ -101,8 +99,9 @@ const Admin: React.FC = () => {
     if (files) {
       setIsProcessingImage(true);
       try {
+        // 갤러리 이미지는 원본에 가까운 고해상도(2500px) 유지
         const processed = await Promise.all(
-          (Array.from(files) as File[]).map(file => processImage(file, 1200, 0.8))
+          (Array.from(files) as File[]).map(file => processImage(file, 2500, 0.9))
         );
         setGalleryImagePreviews(prev => [...prev, ...processed]);
       } finally {
@@ -129,8 +128,7 @@ const Admin: React.FC = () => {
     if (file) {
       setIsProcessingImage(true);
       try {
-        // 배경 이미지는 조금 더 크게 허용
-        const compressed = await processImage(file, 1600, 0.8);
+        const compressed = await processImage(file, 2000, 0.8);
         setHeroImagePreview(compressed);
       } finally {
         setIsProcessingImage(false);
@@ -146,8 +144,6 @@ const Admin: React.FC = () => {
     e.preventDefault();
     setIsSaving(true);
     const formData = new FormData(e.currentTarget);
-    
-    // DB 업데이트 대기 (await 사용)
     await updateData({
       ...data,
       profile: {
@@ -162,9 +158,8 @@ const Admin: React.FC = () => {
         heroImageUrl: heroImagePreview || data.profile.heroImageUrl
       }
     });
-    
     setIsSaving(false);
-    alert('프로필이 클라우드 DB에 저장되었습니다! (다른 기기에서도 새로고침 해보세요)');
+    alert('프로필이 저장되었습니다.');
   };
 
   const startEditing = (project: Project) => {
@@ -203,8 +198,7 @@ const Admin: React.FC = () => {
     const finalImageUrl = projectImagePreview;
     if (!finalImageUrl) return alert('Main image required');
     
-    setIsSaving(true); // 저장 중 표시
-
+    setIsSaving(true);
     const projectData: Project = {
       id: editingProjectId || `project-${Date.now()}`,
       title: formData.get('title') as string,
@@ -222,16 +216,14 @@ const Admin: React.FC = () => {
       ? data.projects.map(p => p.id === editingProjectId ? projectData : p)
       : [projectData, ...data.projects];
       
-    // DB 업데이트 대기
     await updateData({ ...data, projects: newProjects });
-    
     setIsSaving(false);
-    alert(editingProjectId ? '프로젝트가 클라우드에 수정되었습니다!' : '새 프로젝트가 클라우드에 추가되었습니다!');
+    alert('프로젝트가 저장되었습니다.');
     cancelEditing();
   };
 
   const deleteProject = async (id: string) => {
-    if (window.confirm('정말 삭제하시겠습니까? (클라우드에도 반영됩니다)')) {
+    if (window.confirm('정말 삭제하시겠습니까?')) {
       await updateData({ ...data, projects: data.projects.filter(p => p.id !== id) });
     }
   };
@@ -256,32 +248,6 @@ const Admin: React.FC = () => {
     link.click();
   };
 
-  const handleCopySyncString = () => {
-    const dataStr = JSON.stringify(data);
-    navigator.clipboard.writeText(dataStr).then(() => {
-      setCopyFeedback(true);
-      setTimeout(() => setCopyFeedback(false), 2000);
-    });
-  };
-
-  const handleSyncFromString = () => {
-    if (!syncString) return;
-    try {
-      const imported = JSON.parse(syncString) as AppData;
-      if (imported.projects && imported.profile) {
-        if (window.confirm('이 데이터를 클라우드에 덮어씌울까요?')) {
-          updateData(imported);
-          alert('동기화 및 업로드 완료!');
-          window.location.reload();
-        }
-      } else {
-        alert('잘못된 데이터 형식입니다.');
-      }
-    } catch (e) {
-      alert('데이터 파싱 오류');
-    }
-  };
-
   const handleImportData = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files ? e.target.files[0] : null;
     if (file) {
@@ -290,18 +256,11 @@ const Admin: React.FC = () => {
         try {
           const imported = JSON.parse(event.target ? (event.target.result as string) : '') as AppData;
           updateData(imported);
-          alert('데이터 로드 및 클라우드 업로드 완료!');
+          alert('데이터 복원이 완료되었습니다.');
           window.location.reload();
         } catch (err) { alert('파일 오류'); }
       };
       reader.readAsText(file);
-    }
-  };
-
-  const handleResetData = async () => {
-    if (window.confirm('정말 초기화하시겠습니까? (클라우드 데이터도 삭제될 수 있습니다)')) {
-      await updateData({ ...data, projects: [] }); // 빈 값으로 업데이트
-      window.location.reload();
     }
   };
 
@@ -336,10 +295,10 @@ const Admin: React.FC = () => {
       </div>
 
       {isProcessingImage && (
-        <div className="fixed top-8 left-1/2 -translate-x-1/2 z-50 bg-white text-black px-6 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest animate-pulse shadow-2xl">Optimizing Image...</div>
+        <div className="fixed top-8 left-1/2 -translate-x-1/2 z-50 bg-white text-black px-6 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest animate-pulse shadow-2xl">Processing Image...</div>
       )}
 
-      {/* Profile Config */}
+      {/* Profile Section */}
       <section className="space-y-12">
         <h2 className="text-2xl font-bold tracking-tight border-b border-white/5 pb-4">Profile & Branding</h2>
         <form onSubmit={handleUpdateProfile} className="space-y-8">
@@ -348,7 +307,6 @@ const Admin: React.FC = () => {
             <input name="title" required defaultValue={data.profile.title} placeholder="Title" className="bg-white/5 border border-white/10 p-4 outline-none" />
           </div>
           <input name="heroDescription" defaultValue={data.profile.heroDescription} placeholder="Hero Tagline" className="w-full bg-white/5 border border-white/10 p-4 outline-none" />
-          
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
             <div className="space-y-4">
               <label className="text-[10px] uppercase tracking-widest opacity-40">Profile Image</label>
@@ -367,17 +325,13 @@ const Admin: React.FC = () => {
               <label htmlFor="h-up" className="block text-center border border-white/20 py-3 text-[10px] uppercase cursor-pointer hover:bg-white hover:text-black transition-all">Change Hero</label>
             </div>
           </div>
-
           <textarea name="bio" rows={4} defaultValue={data.profile.bio} placeholder="Bio" className="w-full bg-white/5 border border-white/10 p-4 outline-none resize-none" />
           <textarea name="creativeApproach" rows={6} defaultValue={data.profile.creativeApproach} placeholder="Creative Approach" className="w-full bg-white/5 border border-white/10 p-4 outline-none resize-none" />
-          
-          <button type="submit" disabled={isSaving} className="bg-white text-black py-4 px-12 font-bold uppercase text-[10px] tracking-widest hover:bg-white/90">
-            {isSaving ? 'Uploading to Cloud...' : 'Save Settings'}
-          </button>
+          <button type="submit" disabled={isSaving} className="bg-white text-black py-4 px-12 font-bold uppercase text-[10px] tracking-widest hover:bg-white/90">{isSaving ? 'Saving...' : 'Save Settings'}</button>
         </form>
       </section>
 
-      {/* Project Library */}
+      {/* Project Library Section */}
       <section className="space-y-8 pt-12 border-t border-white/10">
         <h2 className="text-2xl font-bold tracking-tight">Project Library</h2>
         <form ref={projectFormRef} onSubmit={handleSaveProject} className="p-6 bg-white/5 border border-white/10 space-y-6">
@@ -396,14 +350,32 @@ const Admin: React.FC = () => {
                 <input name="category" placeholder="Category" className="bg-black border border-white/10 p-3 outline-none" />
                 <input name="year" placeholder="Year" className="bg-black border border-white/10 p-3 outline-none" />
               </div>
+              {/* RESTORED: Client & Tools/Tech Fields */}
+              <div className="grid grid-cols-2 gap-2">
+                <input name="client" placeholder="Client" className="bg-black border border-white/10 p-3 outline-none" />
+                <input name="tools" placeholder="Tools / Tech" className="bg-black border border-white/10 p-3 outline-none" />
+              </div>
               <input name="videoUrl" placeholder="Video URL (YouTube/Vimeo)" className="w-full bg-black border border-white/10 p-3 outline-none" />
               <textarea name="description" rows={2} placeholder="Description" className="w-full bg-black border border-white/10 p-3 outline-none resize-none" />
+              
+              {/* RESTORED: Gallery Upload UI */}
+              <div className="space-y-3">
+                <label className="text-[10px] uppercase tracking-[0.2em] opacity-40 block">Gallery Images (Slide Show)</label>
+                <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                  {galleryImagePreviews.map((img, i) => (
+                    <div key={i} className="relative aspect-square border border-white/10 bg-white/5">
+                      <img src={img} className="w-full h-full object-cover" />
+                      <button type="button" onClick={() => removeGalleryImage(i)} className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px] leading-none">×</button>
+                    </div>
+                  ))}
+                  <label htmlFor="gal-up" className="aspect-square border border-white/20 border-dashed flex items-center justify-center cursor-pointer hover:bg-white/5 text-xl opacity-30">+</label>
+                  <input type="file" multiple accept="image/*" onChange={handleGalleryFilesChange} id="gal-up" className="hidden" />
+                </div>
+              </div>
             </div>
           </div>
           <div className="flex gap-2">
-            <button type="submit" disabled={isSaving} className="flex-grow bg-white text-black py-3 font-bold uppercase text-[10px] tracking-widest">
-                {isSaving ? 'Uploading...' : 'Submit Project'}
-            </button>
+            <button type="submit" disabled={isSaving} className="flex-grow bg-white text-black py-3 font-bold uppercase text-[10px] tracking-widest">{isSaving ? 'Saving...' : 'Submit Project'}</button>
             {editingProjectId && <button type="button" onClick={cancelEditing} className="px-6 border border-white/20 uppercase text-[10px]">Cancel</button>}
           </div>
         </form>
