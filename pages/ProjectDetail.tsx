@@ -107,13 +107,13 @@ const ProjectDetail: React.FC = () => {
               <div className="w-12 h-[1px] bg-white/10"></div>
               <span className="text-[10px] uppercase tracking-[0.4em] opacity-30">{project.year}</span>
             </div>
-            <h1 className="text-4xl md:text-8xl font-extrabold tracking-tighter leading-none break-words">
+            <h1 className="text-2xl md:text-6xl font-extrabold tracking-tighter leading-none break-words uppercase">
               {project.title}
             </h1>
           </div>
 
           <div className="max-w-2xl">
-            <p className="text-base md:text-xl font-light leading-relaxed opacity-60 italic">
+            <p className="text-xs md:text-base font-light leading-relaxed opacity-60 italic">
               {project.description}
             </p>
           </div>
