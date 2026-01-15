@@ -113,7 +113,7 @@ const ProjectDetail: React.FC = () => {
           </div>
 
           <div className="max-w-2xl">
-            <p className="text-xs md:text-base font-light leading-relaxed opacity-60 italic">
+            <p className="text-[10px] md:text-sm font-light leading-relaxed opacity-60 italic whitespace-pre-wrap">
               {project.description}
             </p>
           </div>
