@@ -90,7 +90,7 @@ const ProjectDetail: React.FC = () => {
       </nav>
 
       {/* Hero Image */}
-      <section className="relative w-full flex justify-center bg-white/[0.02] border border-white/5 overflow-hidden">
+      <section className="relative w-full flex justify-center overflow-hidden">
         <img 
           src={project.imageUrl} 
           alt={project.title} 
