@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useApp } from '../App';
 
@@ -8,7 +8,6 @@ const ProjectDetail: React.FC = () => {
   const { data } = useApp();
   
   const project = data.projects.find(p => p.id === id);
-  const [currentSlide, setCurrentSlide] = useState(0);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -30,13 +29,11 @@ const ProjectDetail: React.FC = () => {
   const getYouTubeId = (url: string) => {
     if (!url) return null;
     
-    // 1. If it's an iframe tag, extract src first
     if (url.includes('<iframe')) {
       const srcMatch = url.match(/src=["']([^"']+)["']/);
       if (srcMatch) url = srcMatch[1];
     }
     
-    // 2. Comprehensive Regex for all YouTube URL types (Standard, Shorts, Embed, Mobile)
     const regExp = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/;
     const match = url.match(regExp);
     
@@ -78,14 +75,6 @@ const ProjectDetail: React.FC = () => {
   
   const gallery = project.galleryImages || [];
   const hasGallery = gallery.length > 0;
-
-  const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % gallery.length);
-  };
-
-  const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + gallery.length) % gallery.length);
-  };
 
   return (
     <div className="max-w-7xl mx-auto space-y-24 animate-in fade-in duration-700 pb-32 px-4 md:px-0">
@@ -198,53 +187,25 @@ const ProjectDetail: React.FC = () => {
         </section>
       )}
 
-      {/* Slider Gallery */}
+      {/* Vertical Gallery Section */}
       {hasGallery && (
         <section className="space-y-12">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4 flex-grow">
-              <span className="text-[10px] uppercase tracking-[0.5em] font-bold opacity-30">Gallery</span>
-              <div className="flex-grow h-[1px] bg-white/10"></div>
-            </div>
-            <div className="flex items-center space-x-6 pl-4 md:pl-8">
-              <span className="text-[10px] font-mono tracking-widest opacity-40">
-                {String(currentSlide + 1).padStart(2, '0')} / {String(gallery.length).padStart(2, '0')}
-              </span>
-              <div className="flex space-x-2">
-                <button 
-                  onClick={prevSlide}
-                  className="p-2 border border-white/10 hover:bg-white hover:text-black transition-all"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-                </button>
-                <button 
-                  onClick={nextSlide}
-                  className="p-2 border border-white/10 hover:bg-white hover:text-black transition-all"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                </button>
-              </div>
-            </div>
+          <div className="flex items-center space-x-4">
+            <span className="text-[10px] uppercase tracking-[0.5em] font-bold opacity-30">Gallery</span>
+            <div className="flex-grow h-[1px] bg-white/10"></div>
           </div>
           
-          <div className="relative w-full min-h-[40vh] md:min-h-[70vh] flex items-center justify-center bg-white/[0.01] border border-white/5 overflow-hidden">
+          <div className="flex flex-col items-center space-y-6 md:space-y-12">
             {gallery.map((img, i) => (
               <div 
                 key={i} 
-                className={`absolute inset-0 flex items-center justify-center transition-all duration-700 ease-in-out px-4 py-8 ${
-                  i === currentSlide ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'
-                }`}
+                className="w-full flex justify-center"
               >
-                <div className="relative max-w-full max-h-full">
-                  <img 
-                    src={img} 
-                    alt={`${project.title} Frame ${i + 1}`} 
-                    className="max-w-full max-h-[65vh] md:max-h-[80vh] h-auto object-contain shadow-2xl" 
-                  />
-                  <div className="mt-4 text-center opacity-30">
-                    <span className="text-[10px] uppercase tracking-[0.3em] font-mono">Frame {String(i + 1).padStart(2, '0')}</span>
-                  </div>
-                </div>
+                <img 
+                  src={img} 
+                  alt={`${project.title} Gallery Image ${i + 1}`} 
+                  className="max-w-full max-h-[1000px] h-auto object-contain shadow-2xl transition-all duration-700"
+                />
               </div>
             ))}
           </div>
