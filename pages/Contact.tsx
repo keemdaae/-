@@ -1,9 +1,13 @@
 
 import React from 'react';
 import { useApp } from '../App';
+import { INITIAL_PROFILE } from '../constants';
 
 const Contact: React.FC = () => {
   const { data } = useApp();
+  
+  // 배포 시 데이터 누락 방지를 위한 안전 장치
+  const email = data?.profile?.email || INITIAL_PROFILE.email;
 
   return (
     <div className="max-w-4xl mx-auto py-24">
@@ -23,10 +27,10 @@ const Contact: React.FC = () => {
             </div>
             <p className="text-[10px] uppercase tracking-[0.4em] opacity-40 mb-2">Email</p>
             <a 
-              href={`mailto:${data.profile.email}`} 
+              href={`mailto:${email}`} 
               className="text-2xl md:text-3xl font-bold hover:opacity-70 transition-all underline underline-offset-8 decoration-white/20 hover:decoration-white/50"
             >
-              {data.profile.email}
+              {email}
             </a>
           </div>
         </div>

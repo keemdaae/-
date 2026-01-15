@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../App';
 import { Icons } from '../constants';
@@ -7,8 +8,6 @@ const Admin: React.FC = () => {
   const { data, updateData } = useApp();
   const [password, setPassword] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [syncString, setSyncString] = useState('');
-  const [copyFeedback, setCopyFeedback] = useState(false);
   
   // States for Previews
   const [projectImagePreview, setProjectImagePreview] = useState<string | null>(null);
@@ -21,10 +20,6 @@ const Admin: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isProcessingImage, setIsProcessingImage] = useState(false);
   
-  const projectFileRef = useRef<HTMLInputElement>(null);
-  const galleryFilesRef = useRef<HTMLInputElement>(null);
-  const profileFileRef = useRef<HTMLInputElement>(null);
-  const heroFileRef = useRef<HTMLInputElement>(null);
   const projectFormRef = useRef<HTMLFormElement>(null);
   const importFileRef = useRef<HTMLInputElement>(null);
 
@@ -42,42 +37,39 @@ const Admin: React.FC = () => {
     }
   };
 
-  const processImage = (file: File, maxDim: number = 1200, quality: number = 0.8): Promise<string> => {
-    return new Promise((resolve, reject) => {
+  const processImage = (file: File, maxDim: number = 1600, quality: number = 0.8): Promise<string> => {
+    return new Promise((resolve) => {
       const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = (event) => {
+      reader.onload = (e) => {
         const img = new Image();
-        img.src = (event.target ? event.target.result : '') as string;
         img.onload = () => {
-          const canvas = document.createElement('canvas');
           let width = img.width;
           let height = img.height;
-          if (width > height) {
-            if (width > maxDim) {
-              height *= maxDim / width;
+
+          // 비율 유지하면서 리사이징 (최대 1600px)
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
               width = maxDim;
-            }
-          } else {
-            if (height > maxDim) {
-              width *= maxDim / height;
+            } else {
+              width = Math.round((width * maxDim) / height);
               height = maxDim;
             }
           }
+
+          const canvas = document.createElement('canvas');
           canvas.width = width;
           canvas.height = height;
           const ctx = canvas.getContext('2d');
-          if (ctx) {
-            ctx.imageSmoothingEnabled = true;
-            ctx.imageSmoothingQuality = 'high';
-            ctx.drawImage(img, 0, 0, width, height);
-          }
-          const dataUrl = canvas.toDataURL('image/jpeg', quality);
+          ctx?.drawImage(img, 0, 0, width, height);
+
+          // WebP 포맷으로 변환하여 용량 최소화
+          const dataUrl = canvas.toDataURL('image/webp', quality);
           resolve(dataUrl);
         };
-        img.onerror = reject;
+        img.src = e.target?.result as string;
       };
-      reader.onerror = reject;
+      reader.readAsDataURL(file);
     });
   };
 
@@ -99,7 +91,6 @@ const Admin: React.FC = () => {
     if (files) {
       setIsProcessingImage(true);
       try {
-        // 갤러리 이미지는 원본에 가까운 고해상도(2500px) 유지
         const processed = await Promise.all(
           (Array.from(files) as File[]).map(file => processImage(file, 2500, 0.9))
         );
@@ -154,6 +145,9 @@ const Admin: React.FC = () => {
         bio: formData.get('bio') as string,
         creativeApproach: formData.get('creativeApproach') as string,
         email: formData.get('email') as string,
+        // 전화번호와 주소는 UI에서 제거되었으므로 빈 값 또는 기존 값 유지
+        phone: "",
+        location: "",
         profileImageUrl: profileImagePreview || data.profile.profileImageUrl,
         heroImageUrl: heroImagePreview || data.profile.heroImageUrl
       }
@@ -307,6 +301,11 @@ const Admin: React.FC = () => {
             <input name="title" required defaultValue={data.profile.title} placeholder="Title" className="bg-white/5 border border-white/10 p-4 outline-none" />
           </div>
           <input name="heroDescription" defaultValue={data.profile.heroDescription} placeholder="Hero Tagline" className="w-full bg-white/5 border border-white/10 p-4 outline-none" />
+          
+          <div className="w-full">
+            <input name="email" defaultValue={data.profile.email} placeholder="Contact Email" className="w-full bg-white/5 border border-white/10 p-4 outline-none" />
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
             <div className="space-y-4">
               <label className="text-[10px] uppercase tracking-widest opacity-40">Profile Image</label>
@@ -350,7 +349,6 @@ const Admin: React.FC = () => {
                 <input name="category" placeholder="Category" className="bg-black border border-white/10 p-3 outline-none" />
                 <input name="year" placeholder="Year" className="bg-black border border-white/10 p-3 outline-none" />
               </div>
-              {/* RESTORED: Client & Tools/Tech Fields */}
               <div className="grid grid-cols-2 gap-2">
                 <input name="client" placeholder="Client" className="bg-black border border-white/10 p-3 outline-none" />
                 <input name="tools" placeholder="Tools / Tech" className="bg-black border border-white/10 p-3 outline-none" />
@@ -358,7 +356,6 @@ const Admin: React.FC = () => {
               <input name="videoUrl" placeholder="Video URL (YouTube/Vimeo)" className="w-full bg-black border border-white/10 p-3 outline-none" />
               <textarea name="description" rows={2} placeholder="Description" className="w-full bg-black border border-white/10 p-3 outline-none resize-none" />
               
-              {/* RESTORED: Gallery Upload UI */}
               <div className="space-y-3">
                 <label className="text-[10px] uppercase tracking-[0.2em] opacity-40 block">Gallery Images (Slide Show)</label>
                 <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
