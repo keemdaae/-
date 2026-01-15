@@ -73,6 +73,28 @@ const Admin: React.FC = () => {
     });
   };
 
+  // Cloudinary 업로드 함수
+  const uploadImageToCloudinary = async (base64Data: string): Promise<string> => {
+    // 서명 획득
+    const sigRes = await fetch('/.netlify/functions/get-signature');
+    const { signature, timestamp, cloudName, apiKey } = await sigRes.json();
+
+    const formData = new FormData();
+    formData.append('file', base64Data);
+    formData.append('signature', signature);
+    formData.append('timestamp', timestamp);
+    formData.append('api_key', apiKey);
+
+    const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+      method: 'POST',
+      body: formData
+    });
+
+    if (!uploadRes.ok) throw new Error('Cloudinary upload failed');
+    const uploadData = await uploadRes.json();
+    return uploadData.secure_url;
+  };
+
   const handleProjectFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files ? e.target.files[0] : null;
     if (file) {
@@ -134,26 +156,43 @@ const Admin: React.FC = () => {
   const handleUpdateProfile = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSaving(true);
-    const formData = new FormData(e.currentTarget);
-    await updateData({
-      ...data,
-      profile: {
-        ...data.profile,
-        name: formData.get('name') as string,
-        title: formData.get('title') as string,
-        heroDescription: formData.get('heroDescription') as string,
-        bio: formData.get('bio') as string,
-        creativeApproach: formData.get('creativeApproach') as string,
-        email: formData.get('email') as string,
-        // 전화번호와 주소는 UI에서 제거되었으므로 빈 값 또는 기존 값 유지
-        phone: "",
-        location: "",
-        profileImageUrl: profileImagePreview || data.profile.profileImageUrl,
-        heroImageUrl: heroImagePreview || data.profile.heroImageUrl
+    try {
+      const formData = new FormData(e.currentTarget);
+      
+      // 이미지 업로드 처리 (새로 선택된 경우에만)
+      let finalProfileUrl = profileImagePreview || data.profile.profileImageUrl;
+      if (profileImagePreview && profileImagePreview.startsWith('data:image')) {
+        finalProfileUrl = await uploadImageToCloudinary(profileImagePreview);
       }
-    });
-    setIsSaving(false);
-    alert('프로필이 저장되었습니다.');
+
+      let finalHeroUrl = heroImagePreview || data.profile.heroImageUrl;
+      if (heroImagePreview && heroImagePreview.startsWith('data:image')) {
+        finalHeroUrl = await uploadImageToCloudinary(heroImagePreview);
+      }
+
+      await updateData({
+        ...data,
+        profile: {
+          ...data.profile,
+          name: formData.get('name') as string,
+          title: formData.get('title') as string,
+          heroDescription: formData.get('heroDescription') as string,
+          bio: formData.get('bio') as string,
+          creativeApproach: formData.get('creativeApproach') as string,
+          email: formData.get('email') as string,
+          phone: "",
+          location: "",
+          profileImageUrl: finalProfileUrl,
+          heroImageUrl: finalHeroUrl
+        }
+      });
+      alert('프로필이 저장되었습니다.');
+    } catch (err) {
+      console.error(err);
+      alert('저장 중 오류가 발생했습니다.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const startEditing = (project: Project) => {
@@ -189,31 +228,52 @@ const Admin: React.FC = () => {
     e.preventDefault();
     if (isProcessingImage) return;
     const formData = new FormData(e.currentTarget);
-    const finalImageUrl = projectImagePreview;
-    if (!finalImageUrl) return alert('Main image required');
+    if (!projectImagePreview) return alert('Main image required');
     
     setIsSaving(true);
-    const projectData: Project = {
-      id: editingProjectId || `project-${Date.now()}`,
-      title: formData.get('title') as string,
-      category: formData.get('category') as string,
-      year: formData.get('year') as string,
-      imageUrl: finalImageUrl,
-      videoUrl: formData.get('videoUrl') as string,
-      galleryImages: galleryImagePreviews,
-      description: formData.get('description') as string,
-      client: formData.get('client') as string,
-      tools: formData.get('tools') as string
-    };
-    
-    const newProjects = editingProjectId 
-      ? data.projects.map(p => p.id === editingProjectId ? projectData : p)
-      : [projectData, ...data.projects];
+    try {
+      // 메인 이미지 업로드
+      let finalImageUrl = projectImagePreview;
+      if (projectImagePreview.startsWith('data:image')) {
+        finalImageUrl = await uploadImageToCloudinary(projectImagePreview);
+      }
+
+      // 갤러리 이미지 업로드
+      const finalGalleryUrls = await Promise.all(
+        galleryImagePreviews.map(async (img) => {
+          if (img.startsWith('data:image')) {
+            return await uploadImageToCloudinary(img);
+          }
+          return img;
+        })
+      );
+
+      const projectData: Project = {
+        id: editingProjectId || `project-${Date.now()}`,
+        title: formData.get('title') as string,
+        category: formData.get('category') as string,
+        year: formData.get('year') as string,
+        imageUrl: finalImageUrl,
+        videoUrl: formData.get('videoUrl') as string,
+        galleryImages: finalGalleryUrls,
+        description: formData.get('description') as string,
+        client: formData.get('client') as string,
+        tools: formData.get('tools') as string
+      };
       
-    await updateData({ ...data, projects: newProjects });
-    setIsSaving(false);
-    alert('프로젝트가 저장되었습니다.');
-    cancelEditing();
+      const newProjects = editingProjectId 
+        ? data.projects.map(p => p.id === editingProjectId ? projectData : p)
+        : [projectData, ...data.projects];
+        
+      await updateData({ ...data, projects: newProjects });
+      alert('프로젝트가 저장되었습니다.');
+      cancelEditing();
+    } catch (err) {
+      console.error(err);
+      alert('프로젝트 저장 중 오류가 발생했습니다.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const deleteProject = async (id: string) => {
@@ -326,7 +386,7 @@ const Admin: React.FC = () => {
           </div>
           <textarea name="bio" rows={4} defaultValue={data.profile.bio} placeholder="Bio" className="w-full bg-white/5 border border-white/10 p-4 outline-none resize-none" />
           <textarea name="creativeApproach" rows={6} defaultValue={data.profile.creativeApproach} placeholder="Creative Approach" className="w-full bg-white/5 border border-white/10 p-4 outline-none resize-none" />
-          <button type="submit" disabled={isSaving} className="bg-white text-black py-4 px-12 font-bold uppercase text-[10px] tracking-widest hover:bg-white/90">{isSaving ? 'Saving...' : 'Save Settings'}</button>
+          <button type="submit" disabled={isSaving} className="bg-white text-black py-4 px-12 font-bold uppercase text-[10px] tracking-widest hover:bg-white/90">{isSaving ? 'Uploading & Saving...' : 'Save Settings'}</button>
         </form>
       </section>
 
@@ -372,7 +432,7 @@ const Admin: React.FC = () => {
             </div>
           </div>
           <div className="flex gap-2">
-            <button type="submit" disabled={isSaving} className="flex-grow bg-white text-black py-3 font-bold uppercase text-[10px] tracking-widest">{isSaving ? 'Saving...' : 'Submit Project'}</button>
+            <button type="submit" disabled={isSaving} className="flex-grow bg-white text-black py-3 font-bold uppercase text-[10px] tracking-widest">{isSaving ? 'Uploading...' : 'Submit Project'}</button>
             {editingProjectId && <button type="button" onClick={cancelEditing} className="px-6 border border-white/20 uppercase text-[10px]">Cancel</button>}
           </div>
         </form>
