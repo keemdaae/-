@@ -100,7 +100,7 @@ const ProjectDetail: React.FC = () => {
 
       {/* Header Information */}
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-12 border-b border-white/10 pb-20">
-        <div className="lg:col-span-8 space-y-8 lg:-mr-6">
+        <div className="lg:col-span-8 space-y-8">
           <div className="space-y-4">
             <div className="flex items-center space-x-4">
               <span className="text-[10px] uppercase tracking-[0.4em] opacity-30">{project.category}</span>
