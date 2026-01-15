@@ -100,7 +100,7 @@ const ProjectDetail: React.FC = () => {
 
       {/* Header Information */}
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-12 border-b border-white/10 pb-20">
-        <div className="lg:col-span-8 space-y-8">
+        <div className="lg:col-span-8 space-y-8 lg:-mr-6">
           <div className="space-y-4">
             <div className="flex items-center space-x-4">
               <span className="text-[10px] uppercase tracking-[0.4em] opacity-30">{project.category}</span>
@@ -112,7 +112,7 @@ const ProjectDetail: React.FC = () => {
             </h1>
           </div>
 
-          <div className="max-w-2xl">
+          <div className="max-w-4xl">
             <p className="text-[10px] md:text-sm font-light leading-relaxed opacity-[0.59] italic whitespace-pre-wrap">
               {project.description}
             </p>
